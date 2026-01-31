@@ -1,1 +1,563 @@
 
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Análise Técnica TurboSul</title>
+    
+    <!-- Inclusão do Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Importação da fonte 'Inter' do Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Estilos Customizados -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .bg-brand-blue { background-color: #2563EB; }
+        .hover\:bg-brand-blue-dark:hover { background-color: #1D4ED8; }
+        
+        .os-card:hover {
+            cursor: pointer;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transform: translateY(-2px);
+            transition: all 0.2s ease-in-out;
+        }
+        .os-card.active {
+            border-left: 4px solid #2563EB;
+            background-color: #EBF8FF; /* blue-50 */
+        }
+
+        /* Estilo para a área de observação/status no formulário */
+        .obs-area {
+            background-color: #2D3748; /* Cor escura para combinar com os screenshots */
+            color: #fff;
+            padding: 8px;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 pt-16">
+
+    <!-- HEADER FIXO (Topo da Tela) -->
+    <header class="fixed top-0 left-0 right-0 h-16 bg-white shadow-md z-10 flex items-center justify-between px-6">
+        <div class="flex items-center space-x-4">
+            <img src="https://i.postimg.cc/Jh5Jvrc9/IMG-7901.png" alt="Logo TurboSul" class="w-8 h-8">
+            <div>
+                <h1 class="text-base font-semibold text-gray-800">TurboSul - Controle de Produção</h1>
+                <p class="text-xs text-gray-500">Gerenciamento de Ordens de Serviço</p>
+            </div>
+        </div>
+
+        <nav class="flex items-center space-x-4 text-sm text-gray-600">
+            <a href="#" class="px-3 py-1 hover:bg-slate-100 rounded transition duration-150 font-medium">Quadro de Produção</a>
+            <span class="text-xs text-gray-400">BR</span>
+            <a href="#" class="font-medium text-gray-800 mr-4">Português</a>
+
+            <div class="flex items-center space-x-2 text-gray-700">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 10a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 00-.707-.293h-1.414a1 1 0 100 2h1.414a1 1 0 00.707-.293zM3.465 5.636L4.172 6.343a1 1 0 001.414-1.414L4.879 4.222a1 1 0 00-1.414 1.414zm.707 7.778l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM10 15a1 1 0 100 2h1a1 1 0 100-2h-1z" clip-rule="evenodd" />
+                </svg>
+                <span class="text-sm font-medium">Administrador</span>
+            </div>
+            <span class="text-xs text-gray-500">Análise Técnica</span>
+            <button id="logout-button" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-1.5 px-4 rounded-md transition duration-150">Sair</button>
+        </nav>
+    </header>
+
+    <!-- CONTEÚDO PRINCIPAL (Layout de 3 Colunas) -->
+    <main class="p-6 lg:p-6 flex space-x-6 h-[calc(100vh-64px)]">
+        
+        <!-- Coluna 1: Fila de Trabalho (25%) -->
+        <div class="w-1/4 max-w-xs bg-white rounded-lg shadow p-4 flex flex-col space-y-4 overflow-y-auto">
+            <h2 class="text-xl font-semibold text-gray-800 mb-2">Aguardando Análise</h2>
+
+            <!-- Filtros/Abas da Fila -->
+            <div class="flex space-x-2 text-xs font-medium">
+                <button class="flex-1 bg-brand-blue text-white py-1 px-2 rounded-md">
+                    Fila de Análise (<span id="fila-count">0</span>)
+                </button>
+                <button class="flex-1 bg-slate-200 text-gray-600 py-1 px-2 rounded-md">
+                    Standby / Aguardando Casco (3)
+                </button>
+            </div>
+            
+            <!-- Fila de OSs (Renderizada pelo JS) -->
+            <div id="fila-de-analise-container" class="space-y-3">
+                <p id="loading-message" class="text-gray-500 text-center mt-4">Carregando ordens...</p>
+            </div>
+        </div>
+
+        <!-- Coluna 2: Formulário de Análise (75%) -->
+        <div id="form-container" class="w-3/4 flex flex-col space-y-4">
+            
+            <h2 class="text-2xl font-semibold text-gray-800">Análise Técnica</h2>
+
+            <!-- Placeholder Inicial (Até que uma OS seja selecionada) -->
+            <div id="initial-placeholder" class="bg-white rounded-lg shadow p-20 text-center flex-grow flex items-center justify-center">
+                <p class="text-gray-500 text-lg">Selecione uma OS para iniciar.</p>
+            </div>
+
+            <!-- Formulário de Análise (Visível após clique) -->
+            <div id="analysis-form-wrapper" class="bg-white rounded-lg shadow flex-grow hidden">
+                
+                <form id="analysis-form" class="flex flex-col h-full">
+
+                    <!-- Área Fixa: Título e Detalhes da OS Selecionada -->
+                    <div class="p-4 border-b bg-gray-50 flex justify-between items-center rounded-t-lg">
+                        <h3 id="form-title" class="text-xl font-semibold text-gray-800">Formulário de Análise - ANA-XXX</h3>
+                        <button class="bg-slate-300 hover:bg-slate-400 text-gray-800 font-medium py-1 px-3 rounded-md transition duration-150">
+                            Detalhes da OS
+                        </button>
+                    </div>
+
+                    <!-- Área Fixa: Padrão de Manutenção e Adicionais -->
+                    <div class="p-6 border-b space-y-4">
+                        <h4 class="text-base font-semibold text-gray-700 mb-4">Padrão de Manutenção (1-8) / Adicionais</h4>
+                        
+                        <div class="grid grid-cols-4 gap-4">
+                            <!-- Dropdown Padrão -->
+                            <div class="col-span-1">
+                                <select id="pattern-select" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-brand-blue focus:border-brand-blue">
+                                    <option value="">Selecione o Padrão...</option>
+                                    <script>
+                                        for(let i = 1; i <= 8; i++) {
+                                            document.write(`<option value="Padrão ${i}">Padrão ${i}</option>`);
+                                        }
+                                    </script>
+                                </select>
+                            </div>
+                            <!-- Itens Adicionais Check/Status (Modelo do Screenshot) -->
+                            <!-- Note que estes elementos precisam ser criados dinamicamente no JS para funcionar -->
+                            <div class="col-span-3 grid grid-cols-4 gap-4">
+                                <!-- ATUADOR -->
+                                <div class="space-y-1 p-2 border rounded-lg bg-white">
+                                    <p class="text-xs font-medium text-gray-700">ATUADOR</p>
+                                    <div class="flex items-center space-x-2">
+                                        <input type="checkbox" id="check-actuator" class="h-4 w-4 text-brand-blue border-gray-300 rounded">
+                                        <label for="check-actuator" class="text-sm">Veio?</label>
+                                    </div>
+                                    <select id="status-actuator" class="w-full px-2 py-1 text-xs border rounded-lg bg-green-100 text-green-800">
+                                        <option value="BOM / OK">BOM / OK</option>
+                                        <option value="TROCAR PEÇA">TROCAR PEÇA</option>
+                                    </select>
+                                </div>
+                                <!-- GEOMETRIA VARIÁVEL -->
+                                <div class="space-y-1 p-2 border rounded-lg bg-white">
+                                    <p class="text-xs font-medium text-gray-700">GEOMETRIA VARIÁVEL</p>
+                                    <div class="flex items-center space-x-2">
+                                        <input type="checkbox" id="check-geometry" class="h-4 w-4 text-brand-blue border-gray-300 rounded">
+                                        <label for="check-geometry" class="text-sm">Veio?</label>
+                                    </div>
+                                    <select id="status-geometry" class="w-full px-2 py-1 text-xs border rounded-lg bg-green-100 text-green-800">
+                                        <option value="BOM / OK">BOM / OK</option>
+                                        <option value="TROCAR PEÇA">TROCAR PEÇA</option>
+                                    </select>
+                                </div>
+                                <!-- CANOTE DA GEOMETRIA -->
+                                <div class="space-y-1 p-2 border rounded-lg bg-white">
+                                    <p class="text-xs font-medium text-gray-700">CANOTE DA GEOMETRIA</p>
+                                    <div class="flex items-center space-x-2">
+                                        <input type="checkbox" id="check-geometryStem" class="h-4 w-4 text-brand-blue border-gray-300 rounded">
+                                        <label for="check-geometryStem" class="text-sm">Veio?</label>
+                                    </div>
+                                    <select id="status-geometryStem" class="w-full px-2 py-1 text-xs border rounded-lg bg-green-100 text-green-800">
+                                        <option value="BOM / OK">BOM / OK</option>
+                                        <option value="TROCAR PEÇA">TROCAR PEÇA</option>
+                                    </select>
+                                </div>
+                                <!-- FLANGE DA GEOMETRIA -->
+                                <div class="space-y-1 p-2 border rounded-lg bg-white">
+                                    <p class="text-xs font-medium text-gray-700">FLANGE DA GEOMETRIA</p>
+                                    <div class="flex items-center space-x-2">
+                                        <input type="checkbox" id="check-geometryFlange" class="h-4 w-4 text-brand-blue border-gray-300 rounded">
+                                        <label for="check-geometryFlange" class="text-sm">Veio?</label>
+                                    </div>
+                                    <select id="status-geometryFlange" class="w-full px-2 py-1 text-xs border rounded-lg bg-green-100 text-green-800">
+                                        <option value="BOM / OK">BOM / OK</option>
+                                        <option value="TROCAR PEÇA">TROCAR PEÇA</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Abas de Navegação -->
+                    <div class="p-4 border-b flex space-x-8">
+                        <button type="button" class="tab-button text-brand-blue border-b-2 border-brand-blue font-semibold" data-tab="tab1">1. Anexos (Itens Externos do Cliente)</button>
+                        <button type="button" class="tab-button text-gray-500 hover:text-gray-700 font-medium" data-tab="tab2">2. Reparos Gerais (Interno)</button>
+                        <button type="button" class="tab-button text-gray-500 hover:text-gray-700 font-medium" data-tab="tab3">3. Checklist do Caracol (Caixa Quente)</button>
+                    </div>
+
+                    <!-- Conteúdo das Abas -->
+                    <div id="tab-content-wrapper" class="flex-grow p-6 overflow-y-auto space-y-6">
+                        
+                        <!-- TAB 1: Anexos (Itens Externos do Cliente) -->
+                        <div id="tab1" class="tab-content space-y-4">
+                            <!-- Tabela de Itens Anexos (Preenchida por JS) -->
+                        </div>
+
+                        <!-- TAB 2: Reparos Gerais (Interno) -->
+                        <div id="tab2" class="tab-content hidden space-y-4">
+                            <!-- Tabela de Reparos Gerais (Preenchida por JS) -->
+                        </div>
+                        
+                        <!-- TAB 3: Checklist do Caracol (Caixa Quente) -->
+                        <div id="tab3" class="tab-content hidden space-y-4">
+                            <!-- Tabela de Checklist Caracol (Preenchida por JS) -->
+                        </div>
+                        
+                        <!-- Área de Resumo (Fixa no final da rolagem) -->
+                        <div class="sticky bottom-0 bg-white pt-4 border-t">
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+                                    <p class="text-sm font-semibold text-red-700">Peças para Substituição (Estoque/Vendas)</p>
+                                    <p id="substituicao-resumo" class="text-xs text-red-600 mt-1">Nenhuma peça.</p>
+                                </div>
+                                <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                    <p class="text-sm font-semibold text-yellow-700">Serviços a Realizar (Orçamento)</p>
+                                    <p id="servicos-resumo" class="text-xs text-yellow-600 mt-1">Nenhum serviço.</p>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <p class="text-sm font-semibold text-gray-700 mb-2">Observações gerais...</p>
+                                <textarea id="observacoes-analise" rows="3" class="w-full obs-area text-xs"></textarea>
+                            </div>
+
+                            <!-- Botão Finalizar -->
+                            <div class="flex justify-end pb-4">
+                                <button type="submit" class="bg-brand-blue hover:bg-brand-blue-dark text-white font-bold py-2 px-4 rounded-lg transition duration-200">
+                                    Finalizar Análise e Gerar Relatórios
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+    
+    <!-- MODAIS (Saindo da estrutura de 3 colunas) -->
+
+    <!-- MODAL DE CONFIRMAÇÃO DE DESPACHO (Mantido) -->
+    <div id="confirm-dispatch-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-[100]">
+        <div class="bg-white w-full max-w-sm rounded-xl shadow-2xl p-6 text-center">
+            <svg class="w-12 h-12 text-yellow-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+            <h3 class="text-xl font-bold text-gray-800 mb-2">Confirmar Despacho</h3>
+            <p id="confirm-dispatch-message" class="text-gray-600 mb-6">Tem certeza que deseja despachar X ordens para Análise Técnica?</p>
+            
+            <div class="flex justify-center space-x-3">
+                <button id="cancel-dispatch-btn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2 px-4 rounded-lg transition duration-150">
+                    Cancelar
+                </button>
+                <button id="confirm-dispatch-btn" class="bg-brand-blue hover:bg-brand-blue-dark text-white font-medium py-2 px-4 rounded-lg transition duration-150">
+                    OK
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- MODAL DE SUCESSO (Criação, Despacho e Detalhes - Omitidos para brevidade, mas presentes no JS) -->
+    
+    <!-- Inclusão da biblioteca do Supabase via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Lógica de Frontend com JavaScript Puro (Vanilla JS) -->
+    <script>
+        // ====================================================================
+        // 1. CONFIGURAÇÃO E DADOS
+        // ====================================================================
+        const SUPABASE_URL = 'https://zghaqlaqozsskfldgsfe.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpnaGFxbGFxb3pzc2tmbGRnc2ZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyMDY1MzQsImV4cCI6MjA4NDc4MjUzNH0.aC2DMOUNhS2uK6KGI5Sf2c2vGhrCKHMnRyZhL3WwSus';
+        const LOGO_URL = 'https://i.postimg.cc/Jh5Jvrc9/IMG-7901.png';
+        
+        // Webhooks para Análise Técnica
+        const WEBHOOK_GET_ANALYSIS = 'https://webhook.mareflow.com.br/webhook/orders/analysis';
+        const WEBHOOK_SAVE_ANALYSIS = 'https://webhook.mareflow.com.br/webhook/analysis/save';
+        const FALLBACK_USER_UID = '8ab0d7ed-055c-4480-a1af-eb0b08894682';
+
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        let currentOrders = [];
+        let activeOSId = null;
+
+        // Dados estáticos para o formulário
+        const STATUS_OPTIONS_EXTERNAL = ['Não Informado', 'PEÇA OK', 'RECONDICIONAR', 'TROCAR'];
+        const STATUS_OPTIONS_CARACOL = ['CONDENAR CARACOL COMPLETO', 'PEÇA OK', 'RECONDICIONAR', 'TROCAR'];
+
+        const ANALYSIS_ITEMS = {
+            tab1: ['Abraçadeiras', 'Mangueiras', 'Flanges', 'Canos', 'Calços', 'Coletor', 'Prisioneiros'],
+            tab2: ['Parafusos', 'Carcaça Compressor', 'Carcaça Central', 'Rotor Compressor', 'Eixo Rotor', 'Prato Compressor', 'Colar'],
+            tab3: ['Trincas (Parede)', 'Roscas / Prisioneiros', 'Assento da Válvula', 'Faceamento']
+        };
+
+        // ====================================================================
+        // 2. FUNÇÕES AUXILIARES E DE CONTROLE
+        // ====================================================================
+
+        async function getCurrentUserUID() { /* ... (Mantido) ... */
+            try {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (session && session.user) { return session.user.id; }
+            } catch (error) { console.error("Erro ao obter a sessão para UID.", error); }
+            return FALLBACK_USER_UID;
+        }
+
+        function getUrgencyBadge(urgency) { /* ... (Mantido) ... */
+            switch (urgency) {
+                case 'Urgente': return 'bg-red-600 text-white';
+                case 'Alta': return 'bg-red-400 text-white'; 
+                case 'Normal': return 'bg-blue-300 text-gray-800';
+                case 'Baixa': return 'bg-gray-300 text-gray-800';
+                default: return 'bg-gray-300 text-gray-800';
+            }
+        }
+        
+        function formatDateTime(isoString) { /* ... (Mantido) ... */
+            if (!isoString) return '--';
+            try {
+                const date = new Date(isoString);
+                return date.toLocaleDateString('pt-BR') + ' ' + date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            } catch {
+                return isoString;
+            }
+        }
+
+        // Renderiza o corpo dos cards na coluna esquerda
+        function renderOrderCard(order) {
+            const urgencyText = order.urgency || 'Normal';
+            const urgencyClass = getUrgencyBadge(urgencyText);
+            
+            return `
+                <div class="os-card bg-white p-3 rounded-lg shadow border border-gray-200" data-order-id="${order.id}">
+                    <p class="text-base font-bold text-gray-800 mb-1 flex justify-between items-center">${order.business_id}
+                        <span class="inline-block text-xs font-medium ${urgencyClass} px-2 py-0.5 rounded-full">${urgencyText}</span>
+                    </p>
+                    <p class="text-sm text-gray-600">${order.model}</p>
+                    <p class="text-xs text-gray-500">${order.client}</p>
+                    <p class="text-xs text-gray-500 mt-1">${formatDateTime(order.entry_date)}</p>
+                </div>
+            `;
+        }
+        
+        // Gera o HTML da linha do formulário (Dropdown + Obs)
+        function createFormRow(itemName, options) {
+            const cleanName = itemName.replace(/\s+/g, '_').toLowerCase();
+            const optionTags = options.map(opt => `<option value="${opt}" ${opt === 'Não Informado' ? 'selected' : ''}>${opt}</option>`).join('');
+            
+            return `
+                <div class="grid grid-cols-4 gap-4 items-center border-b py-2">
+                    <label class="col-span-2 text-sm font-medium text-gray-700">${itemName}</label>
+                    <select id="status-${cleanName}" name="status-${cleanName}" class="col-span-1 w-full px-2 py-1 text-sm border rounded-lg bg-white focus:ring-brand-blue status-select">
+                        ${optionTags}
+                    </select>
+                    <textarea id="obs-${cleanName}" name="obs-${cleanName}" placeholder="Obs..." rows="1" class="col-span-1 w-full px-2 py-1 text-xs border rounded-lg obs-area resize-none"></textarea>
+                </div>
+            `;
+        }
+
+        // Renderiza o formulário principal
+        function renderAnalysisForm() {
+            const tab1Content = ANALYSIS_ITEMS.tab1.map(item => createFormRow(item, STATUS_OPTIONS_EXTERNAL)).join('');
+            const tab2Content = ANALYSIS_ITEMS.tab2.map(item => createFormRow(item, STATUS_OPTIONS_EXTERNAL)).join('');
+            const tab3Content = ANALYSIS_ITEMS.tab3.map(item => createFormRow(item, STATUS_OPTIONS_CARACOL)).join('');
+            
+            document.getElementById('tab1').innerHTML = `<div class="p-4 bg-white">${tab1Content}</div>`;
+            document.getElementById('tab2').innerHTML = `<div class="p-4 bg-white">${tab2Content}</div>`;
+            document.getElementById('tab3').innerHTML = `<div class="p-4 bg-white">${tab3Content}</div>`;
+
+            // Adicionar listeners para mudança de cor dos selects de status
+            document.querySelectorAll('.status-select').forEach(select => {
+                select.addEventListener('change', updateStatusSelectStyle);
+                updateStatusSelectStyle({ target: select }); // Chama inicialmente para aplicar a cor padrão
+            });
+        }
+        
+        // Aplica cores dinamicamente aos dropdowns de status
+        function updateStatusSelectStyle(event) {
+            const select = event.target;
+            select.className = select.className.replace(/bg-(red|green|yellow|slate)-[0-9]{2,3} text-(white|red|green|yellow|gray)-[0-9]{2,3}/g, '');
+            
+            const value = select.value;
+            let bgColor = 'bg-slate-200';
+            let textColor = 'text-gray-800';
+
+            if (value.includes('OK')) {
+                bgColor = 'bg-green-500';
+                textColor = 'text-white';
+            } else if (value.includes('TROCAR') || value.includes('CONDENAR')) {
+                bgColor = 'bg-red-600';
+                textColor = 'text-white';
+            } else if (value.includes('RECONDICIONAR')) {
+                bgColor = 'bg-yellow-500';
+                textColor = 'text-white';
+            }
+
+            select.classList.add(bgColor, textColor);
+        }
+        
+        // Alternar abas
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            document.getElementById(tabId).classList.remove('hidden');
+
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('text-brand-blue', 'border-b-2', 'border-brand-blue');
+                btn.classList.add('text-gray-500', 'hover:text-gray-700');
+            });
+
+            document.querySelector(`[data-tab="${tabId}"]`).classList.add('text-brand-blue', 'border-b-2', 'border-brand-blue');
+            document.querySelector(`[data-tab="${tabId}"]`).classList.remove('text-gray-500', 'hover:text-gray-700');
+        }
+
+        // Preenche o formulário ao selecionar uma OS
+        function populateForm(order) {
+            activeOSId = order.id;
+            document.getElementById('initial-placeholder').classList.add('hidden');
+            document.getElementById('analysis-form-wrapper').classList.remove('hidden');
+            
+            document.getElementById('form-title').textContent = `Formulário de Análise - ${order.business_id}`;
+            
+            // Aqui você preencheria os campos do formulário se tivesse dados de análise salvos (payload de salvamento)
+            // Por enquanto, apenas atualizamos a cor do card ativo
+            document.querySelectorAll('.os-card').forEach(card => card.classList.remove('active'));
+            document.querySelector(`.os-card[data-order-id="${order.id}"]`).classList.add('active');
+            
+            // Placeholder: Exibição de Resumo Fixo para demonstração
+            document.getElementById('substituicao-resumo').textContent = 'Peças: ' + (order.maintenance_extras && order.maintenance_extras.actuator ? 'Atuador' : 'Nenhuma peça.');
+            document.getElementById('servicos-resumo').textContent = 'Serviços: ' + (order.observation || 'Nenhum serviço.');
+        }
+
+        // ====================================================================
+        // 3. CARREGAMENTO E INICIALIZAÇÃO
+        // ====================================================================
+
+        async function loadAnalysisOrders() { 
+            const WEBHOOK_GET = WEBHOOK_GET_ANALYSIS;
+            
+            document.getElementById('fila-de-analise-container').innerHTML = '';
+            document.getElementById('loading-message').classList.remove('hidden');
+            
+            try {
+                const response = await fetch(WEBHOOK_GET, { method: 'GET', headers: { 'Content-Type': 'application/json' } });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Falha HTTP (Status: ${response.status}). Resposta: ${errorText.substring(0, 50)}...`);
+                }
+
+                const text = await response.text();
+                let responseJson = {};
+                if (text) {
+                    try {
+                        responseJson = JSON.parse(text);
+                    } catch (e) {
+                        responseJson = { data: [] };
+                    }
+                } else {
+                    responseJson = { data: [] };
+                }
+                
+                let orders = responseJson.data; 
+                if (!Array.isArray(orders)) { orders = Array.isArray(responseJson) ? responseJson : []; }
+                
+                currentOrders = orders.map(rawOrder => {
+                    const order = rawOrder.json || rawOrder;
+                    // Adiciona entrada_date para renderização de detalhes
+                    order.entry_date = order.entry_date || order.created_at; 
+                    return order;
+                });
+                
+                document.getElementById('loading-message').classList.add('hidden');
+                
+                if (currentOrders.length === 0) {
+                    document.getElementById('fila-de-analise-container').innerHTML = '<p class="text-gray-500 text-center mt-4">Nenhuma ordem de serviço na fila de análise.</p>';
+                    document.getElementById('fila-count').textContent = '0';
+                    return;
+                }
+
+                document.getElementById('fila-count').textContent = currentOrders.length;
+                
+                currentOrders.forEach(orderToRender => {
+                    document.getElementById('fila-de-analise-container').insertAdjacentHTML('beforeend', renderOrderCard(orderToRender));
+                });
+                
+                addCardClickListeners();
+
+            } catch (error) {
+                console.error("Erro ao carregar ordens:", error);
+                document.getElementById('loading-message').textContent = `Erro ao carregar a fila. ${error.message}.`;
+                document.getElementById('loading-message').classList.remove('hidden');
+                document.getElementById('fila-count').textContent = 'ERRO';
+            }
+        }
+        
+        // ====================================================================
+        // 4. INICIALIZAÇÃO DOS LISTENERS
+        // ====================================================================
+
+        function addCardClickListeners() {
+            document.querySelectorAll('.os-card').forEach(card => {
+                card.addEventListener('click', (event) => {
+                    const orderId = event.currentTarget.dataset.orderId;
+                    const orderData = currentOrders.find(o => o.id === orderId);
+                    
+                    if (orderData) {
+                        populateForm(orderData);
+                        // Você pode adicionar uma chamada aqui para atualizar o status da OS no banco para "Em Análise"
+                    }
+                });
+            });
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Renderiza o formulário padrão (popula as opções das abas)
+            renderAnalysisForm();
+
+            // 2. Listener de Logout
+            document.getElementById('logout-button').addEventListener('click', async () => {
+                await supabaseClient.auth.signOut();
+                window.location.href = '/index.html';
+            });
+            
+            // 3. Listener das Abas
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    switchTab(e.target.dataset.tab);
+                });
+            });
+
+            // 4. Listener do Form. Finalizar Análise (POST)
+            document.getElementById('analysis-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                alert('Ação "Finalizar Análise e Gerar Relatórios" - Envio POST para Webhook: ' + WEBHOOK_SAVE_ANALYSIS);
+                // Aqui seria a lógica para coletar todos os dados do formulário e enviar via POST.
+            });
+
+            // 5. Chamada de Inicialização
+            (async function initDashboard() {
+                const { data: { session }, error } = await supabaseClient.auth.getSession();
+
+                if (error || !session) {
+                    // Redireciona se não estiver logado
+                    // window.location.href = '/index.html'; 
+                    // return;
+                }
+
+                await loadAnalysisOrders();
+            })();
+        });
+    </script>
+</body>
+</html>
