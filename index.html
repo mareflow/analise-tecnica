@@ -1,3 +1,5 @@
+--- START OF FILE Paste February 01, 2026 - 6:33PM ---
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -474,6 +476,7 @@
             const cleanName = itemName.replace(/\s+/g, '_').toLowerCase();
             const optionTags = options.map(opt => `<option value="${opt}" ${opt === 'Não Informado' ? 'selected' : ''}>${opt}</option>`).join('');
             
+            // O select tem a classe bg-white, que está causando o problema de fundo branco ao selecionar TROCAR
             return `
                 <div class="grid grid-cols-4 gap-4 items-center border-b py-2">
                     <label class="col-span-2 text-sm font-medium text-gray-700">${itemName}</label>
@@ -488,8 +491,8 @@
         // Aplica cores dinamicamente aos dropdowns de status (CORRIGIDO PARA TROCAR/TROCAR PEÇA)
         function updateStatusSelectStyle(event) {
             const select = event.target;
-            // Lista completa de classes de cor a serem removidas
-            select.classList.remove('bg-slate-200', 'bg-green-500', 'bg-red-600', 'bg-yellow-500', 'text-white', 'text-gray-800');
+            // Lista completa de classes de cor a serem removidas. ADICIONADO 'bg-white' para corrigir o problema do fundo branco ao selecionar 'TROCAR'.
+            select.classList.remove('bg-slate-200', 'bg-green-500', 'bg-red-600', 'bg-yellow-500', 'text-white', 'text-gray-800', 'bg-white');
             
             const value = select.value;
             let bgColor = 'bg-slate-200';
