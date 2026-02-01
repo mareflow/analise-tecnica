@@ -39,6 +39,12 @@
             padding: 8px;
             border-radius: 6px;
         }
+        
+        /* Estilo para dropdowns no estado TROCAR */
+        .status-select.bg-red-600 {
+            background-color: #DC2626 !important; /* Força o vermelho */
+            color: white !important;
+        }
     </style>
 </head>
 <body class="bg-slate-100 pt-20">
@@ -311,7 +317,7 @@
         </div>
     </div>
 
-    <!-- MODAL DE CONFIRMAÇÃO DE DESPACHO (Mantido no HTML, mas não usado pelo JS deste arquivo) -->
+    <!-- MODAL DE CONFIRMAÇÃO DE DESPACHO (Mantido no HTML para consistência global) -->
     <div id="confirm-dispatch-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-[100]">
         <div class="bg-white w-full max-w-sm rounded-xl shadow-2xl p-6 text-center">
             <svg class="w-12 h-12 text-yellow-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -356,7 +362,7 @@
 
         // Dados estáticos para o formulário
         const STATUS_OPTIONS_EXTERNAL = ['Não Informado', 'PEÇA OK', 'RECONDICIONAR', 'TROCAR'];
-        const STATUS_OPTIONS_CARACOL = ['CONDENAR CARACOL COMPLETO', 'PEÇA OK', 'RECONDICIONAR', 'TROCAR'];
+        const STATUS_OPTIONS_CARACOL = ['PEÇA OK', 'RECONDICIONAR', 'TROCAR']; // CONDENAR COMPLETO É UMA OPÇÃO GLOBAL
 
         const ANALYSIS_ITEMS = {
             tab1: ['Abraçadeiras', 'Mangueiras', 'Flanges', 'Canos', 'Calços', 'Coletor', 'Prisioneiros'],
@@ -380,7 +386,7 @@
         
         const FALLBACK_USER_UID = '8ab0d7ed-055c-4480-a1af-eb0b08894682';
 
-        // Variáveis DOM (apenas declaração para escopo global)
+        // Variáveis DOM declaradas aqui para o escopo global (serão populadas em DCL)
         let filaContainer, filaCountSpan, loadingMessage, modal, successModal, detailsModal, confirmDispatchModal, dispatchSuccessModal, confirmDispatchMessage, dispatchSuccessMessage, form, baseTrocaCheck, baseTrocaRadiosDiv, successOkBtn, closeDetailsBtn, dispatchAllBtn, confirmDispatchBtn, cancelDispatchBtn, dispatchSuccessOkBtn;
 
 
@@ -449,7 +455,18 @@
             const createContent = (tabKey, options) => ANALYSIS_ITEMS[tabKey].map(item => createFormRow(item, options)).join('');
             const tab1Content = createContent('tab1', STATUS_OPTIONS_EXTERNAL);
             const tab2Content = createContent('tab2', STATUS_OPTIONS_EXTERNAL);
-            const tab3Content = createContent('tab3', STATUS_OPTIONS_CARACOL);
+            const tab3Content = `
+                <!-- Checkbox Global Condenar Caracol -->
+                <div class="p-4 mb-4 border border-red-300 rounded-lg bg-white flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <input type="checkbox" id="condenar-caracol-check" class="h-5 w-5 text-red-600 border-red-300 rounded focus:ring-red-500">
+                        <label for="condenar-caracol-check" class="text-sm font-bold text-red-700">CONDENAR CARACOL COMPLETO (TROCAR)</label>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    ${createContent('tab3', STATUS_OPTIONS_CARACOL)}
+                </div>
+            `;
             
             document.getElementById('tab1').innerHTML = `<div class="p-4 bg-white">${tab1Content}</div>`;
             document.getElementById('tab2').innerHTML = `<div class="p-4 bg-white">${tab2Content}</div>`;
@@ -472,7 +489,7 @@
             `;
         }
         
-        // Aplica cores dinamicamente aos dropdowns de status
+        // Aplica cores dinamicamente aos dropdowns de status (CORRIGIDO PARA TROCAR/TROCAR PEÇA)
         function updateStatusSelectStyle(event) {
             const select = event.target;
             select.classList.remove('bg-slate-200', 'bg-green-500', 'bg-red-600', 'bg-yellow-500', 'text-white', 'text-gray-800');
@@ -484,7 +501,7 @@
             if (value.includes('OK')) {
                 bgColor = 'bg-green-500';
                 textColor = 'text-white';
-            } else if (value.includes('TROCAR') || value.includes('CONDENAR')) {
+            } else if (value.includes('TROCAR') || value.includes('PEÇA')) { // Corrigido para incluir 'TROCAR PEÇA'
                 bgColor = 'bg-red-600';
                 textColor = 'text-white';
             } else if (value.includes('RECONDICIONAR')) {
@@ -524,6 +541,7 @@
             document.querySelectorAll('.os-card').forEach(card => card.classList.remove('active'));
             document.querySelector(`.os-card[data-order-id="${order.id}"]`).classList.add('active');
             
+            // Resumo (Placeholder)
             document.getElementById('substituicao-resumo').textContent = 'Anexo: ' + (order.maintenance_extras && order.maintenance_extras.geometry ? 'Geometria Variável' : 'Nenhuma peça.');
             document.getElementById('servicos-resumo').textContent = 'Observações: ' + (order.observation || 'Nenhum serviço.');
         }
@@ -564,31 +582,31 @@
                     return order;
                 });
                 
-                loadingMessage.classList.add('hidden');
+                document.getElementById('loading-message').classList.add('hidden');
                 
                 if (currentOrders.length === 0) {
-                    filaContainer.innerHTML = '<p class="text-gray-500 text-center mt-4">Nenhuma ordem de serviço na fila de análise.</p>';
-                    filaCountSpan.textContent = '0';
+                    document.getElementById('fila-de-analise-container').innerHTML = '<p class="text-gray-500 text-center mt-4">Nenhuma ordem de serviço na fila de análise.</p>';
+                    document.getElementById('fila-count').textContent = '0';
                     return;
                 }
 
-                filaCountSpan.textContent = currentOrders.length;
+                document.getElementById('fila-count').textContent = currentOrders.length;
                 
                 currentOrders.forEach(orderToRender => {
-                    filaContainer.insertAdjacentHTML('beforeend', renderOrderCard(orderToRender));
+                    document.getElementById('fila-de-analise-container').insertAdjacentHTML('beforeend', renderOrderCard(orderToRender));
                 });
                 
                 addCardClickListeners();
 
             } catch (error) {
                 console.error("Erro ao carregar ordens:", error);
-                loadingMessage.textContent = `Erro ao carregar a fila. ${error.message}.`;
-                loadingMessage.classList.remove('hidden');
-                filaCountSpan.textContent = 'ERRO';
+                document.getElementById('loading-message').textContent = `Erro ao carregar a fila. ${error.message}.`;
+                document.getElementById('loading-message').classList.remove('hidden');
+                document.getElementById('fila-count').textContent = 'ERRO';
             }
         }
         
-        // Funções de Modal (Mantidas, mas não relevantes para o fluxo ANA)
+        // Funções de Modal (Mantidas para referência, mas não relevantes para o fluxo ANA)
         function showSuccessModal() { /* ... */ }
         function showDispatchSuccessModal(count) { /* ... */ }
         function closeModal() { /* ... */ }
@@ -599,7 +617,7 @@
 
 
         // ====================================================================
-        // 4. INICIALIZAÇÃO DOS LISTENERS (CORRIGIDA)
+        // 4. INICIALIZAÇÃO DOS LISTENERS
         // ====================================================================
 
         function addCardClickListeners() {
@@ -620,7 +638,8 @@
             filaContainer = document.getElementById('fila-de-analise-container');
             filaCountSpan = document.getElementById('fila-count');
             loadingMessage = document.getElementById('loading-message');
-            // Mapeamento dos Listeners (para o escopo local do DCL)
+            
+            // Mapeamento dos Listeners (Certificando-se que os IDs existem no HTML)
             const formElement = document.getElementById('analysis-form');
             const logoutBtn = document.getElementById('logout-button');
             const tabButtons = document.querySelectorAll('.tab-button');
