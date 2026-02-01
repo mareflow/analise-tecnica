@@ -311,7 +311,7 @@
         </div>
     </div>
 
-    <!-- MODAL DE CONFIRMAÇÃO DE DESPACHO (CRÍTICO: MANTIDO NO HTML PARA NÃO QUEBRAR O JS DO PRÉ-VENDAS) -->
+    <!-- MODAL DE CONFIRMAÇÃO DE DESPACHO (Mantido no HTML para consistência global, mas não usado pelo JS deste arquivo) -->
     <div id="confirm-dispatch-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-[100]">
         <div class="bg-white w-full max-w-sm rounded-xl shadow-2xl p-6 text-center">
             <svg class="w-12 h-12 text-yellow-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -380,7 +380,7 @@
         
         const FALLBACK_USER_UID = '8ab0d7ed-055c-4480-a1af-eb0b08894682';
 
-        // Variáveis DOM declaradas aqui para o escopo global
+        // Variáveis DOM (usadas apenas dentro do DOMContentLoaded, mas mantidas aqui para escopo)
         let filaContainer, filaCountSpan, loadingMessage, modal, successModal, detailsModal, confirmDispatchModal, dispatchSuccessModal, confirmDispatchMessage, dispatchSuccessMessage, form, baseTrocaCheck, baseTrocaRadiosDiv, successOkBtn, closeDetailsBtn, dispatchAllBtn, confirmDispatchBtn, cancelDispatchBtn, dispatchSuccessOkBtn;
 
 
@@ -388,7 +388,7 @@
         // 2. FUNÇÕES AUXILIARES E DE CONTROLE
         // ====================================================================
 
-        async function getCurrentUserUID() { /* ... */
+        async function getCurrentUserUID() { 
             try {
                 const { data: { session } } = await supabaseClient.auth.getSession();
                 if (session && session.user) { return session.user.id; }
@@ -524,6 +524,7 @@
             document.querySelectorAll('.os-card').forEach(card => card.classList.remove('active'));
             document.querySelector(`.os-card[data-order-id="${order.id}"]`).classList.add('active');
             
+            // Resumo (Placeholder)
             document.getElementById('substituicao-resumo').textContent = 'Anexo: ' + (order.maintenance_extras && order.maintenance_extras.geometry ? 'Geometria Variável' : 'Nenhuma peça.');
             document.getElementById('servicos-resumo').textContent = 'Observações: ' + (order.observation || 'Nenhum serviço.');
         }
@@ -588,20 +589,17 @@
             }
         }
         
-        // Funções de Modal (Mantidas para referência, mas não relevantes para o fluxo ANA)
+        // Funções de Modal (Mantidas, mas não relevantes para o fluxo ANA)
         function showSuccessModal() { /* ... */ }
         function showDispatchSuccessModal(count) { /* ... */ }
         function closeModal() { /* ... */ }
         function closeDetailsModal() { /* ... */ }
         function closeConfirmDispatchModal() { /* ... */ }
         function closeDispatchSuccessModal() { /* ... */ }
-        
-        // Funções de Despacho (Mantidas por padrão, mas não chamadas neste fluxo)
         async function dispatchAllOrders(osIds) { /* ... */ }
 
-
         // ====================================================================
-        // 4. INICIALIZAÇÃO DOS LISTENERS (AGORA SEM ERROS DE REFERÊNCIA)
+        // 4. INICIALIZAÇÃO DOS LISTENERS
         // ====================================================================
 
         function addCardClickListeners() {
@@ -622,11 +620,14 @@
             filaContainer = document.getElementById('fila-de-analise-container');
             filaCountSpan = document.getElementById('fila-count');
             loadingMessage = document.getElementById('loading-message');
-            // ... Mapeamento de todos os elementos necessários ...
-            successOkBtn = document.getElementById('success-modal-ok-btn');
-            closeDetailsBtn = document.getElementById('close-details-modal-btn');
-            // Nota: Os botões de despacho foram removidos do JS, resolvendo o ReferenceError
-
+            // Mapeamento de outros elementos essenciais (para listeners)
+            // OBS: Os elementos de Despacho (confirmDispatchModal, etc.) foram omitidos aqui, resolvendo o ReferenceError.
+            
+            // Mapeamento dos Listeners (Certificando-se que os IDs existem no HTML)
+            const formElement = document.getElementById('analysis-form');
+            const logoutBtn = document.getElementById('logout-button');
+            const tabButtons = document.querySelectorAll('.tab-button');
+            
             // 1. Renderiza o formulário padrão (popula as opções das abas)
             renderAnalysisForm();
             
@@ -637,20 +638,20 @@
             });
 
             // Listener de Logout
-            document.getElementById('logout-button').addEventListener('click', async () => {
+            logoutBtn.addEventListener('click', async () => {
                 await supabaseClient.auth.signOut();
                 window.location.href = '/index.html';
             });
             
             // Listener das Abas
-            document.querySelectorAll('.tab-button').forEach(button => {
+            tabButtons.forEach(button => {
                 button.addEventListener('click', (e) => {
                     switchTab(e.target.dataset.tab);
                 });
             });
             
             // Listener do Form. Finalizar Análise (POST)
-            document.getElementById('analysis-form').addEventListener('submit', async (e) => {
+            formElement.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 alert('Ação "Finalizar Análise e Gerar Relatórios" - Envio POST para Webhook: ' + WEBHOOK_SAVE_ANALYSIS);
             });
