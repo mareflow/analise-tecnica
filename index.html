@@ -131,7 +131,7 @@
                                     </script>
                                 </select>
                             </div>
-                            <!-- Itens Adicionais Check/Status -->
+                            <!-- Itens Adicionais Check/Status - CLASSES DE COR INICIAIS REMOVIDAS -->
                             <div class="col-span-3 grid grid-cols-4 gap-4">
                                 <!-- ATUADOR -->
                                 <div class="space-y-1 p-2 border rounded-lg bg-white">
@@ -140,7 +140,7 @@
                                         <input type="checkbox" id="check-actuator" class="h-4 w-4 text-brand-blue border-gray-300 rounded">
                                         <label for="check-actuator" class="text-sm">Veio?</label>
                                     </div>
-                                    <select id="status-actuator" class="w-full px-2 py-1 text-xs border rounded-lg bg-green-100 text-green-800">
+                                    <select id="status-actuator" class="w-full px-2 py-1 text-xs border rounded-lg">
                                         <option value="BOM / OK">BOM / OK</option>
                                         <option value="TROCAR PEÇA">TROCAR PEÇA</option>
                                     </select>
@@ -152,7 +152,7 @@
                                         <input type="checkbox" id="check-geometry" class="h-4 w-4 text-brand-blue border-gray-300 rounded">
                                         <label for="check-geometry" class="text-sm">Veio?</label>
                                     </div>
-                                    <select id="status-geometry" class="w-full px-2 py-1 text-xs border rounded-lg bg-green-100 text-green-800">
+                                    <select id="status-geometry" class="w-full px-2 py-1 text-xs border rounded-lg">
                                         <option value="BOM / OK">BOM / OK</option>
                                         <option value="TROCAR PEÇA">TROCAR PEÇA</option>
                                     </select>
@@ -164,7 +164,7 @@
                                         <input type="checkbox" id="check-geometryStem" class="h-4 w-4 text-brand-blue border-gray-300 rounded">
                                         <label for="check-geometryStem" class="text-sm">Veio?</label>
                                     </div>
-                                    <select id="status-geometryStem" class="w-full px-2 py-1 text-xs border rounded-lg bg-green-100 text-green-800">
+                                    <select id="status-geometryStem" class="w-full px-2 py-1 text-xs border rounded-lg">
                                         <option value="BOM / OK">BOM / OK</option>
                                         <option value="TROCAR PEÇA">TROCAR PEÇA</option>
                                     </select>
@@ -176,7 +176,7 @@
                                         <input type="checkbox" id="check-geometryFlange" class="h-4 w-4 text-brand-blue border-gray-300 rounded">
                                         <label for="check-geometryFlange" class="text-sm">Veio?</label>
                                     </div>
-                                    <select id="status-geometryFlange" class="w-full px-2 py-1 text-xs border rounded-lg bg-green-100 text-green-800">
+                                    <select id="status-geometryFlange" class="w-full px-2 py-1 text-xs border rounded-lg">
                                         <option value="BOM / OK">BOM / OK</option>
                                         <option value="TROCAR PEÇA">TROCAR PEÇA</option>
                                     </select>
@@ -488,6 +488,7 @@
         // Aplica cores dinamicamente aos dropdowns de status (CORRIGIDO PARA TROCAR/TROCAR PEÇA)
         function updateStatusSelectStyle(event) {
             const select = event.target;
+            // Lista completa de classes de cor a serem removidas
             select.classList.remove('bg-slate-200', 'bg-green-500', 'bg-red-600', 'bg-yellow-500', 'text-white', 'text-gray-800');
             
             const value = select.value;
@@ -498,16 +499,14 @@
                 bgColor = 'bg-green-500';
                 textColor = 'text-white';
             } else if (value.includes('TROCAR')) { 
-                bgColor = 'bg-red-600';
+                bgColor = 'bg-red-600'; // Vermelho para TROCAR e TROCAR PEÇA
                 textColor = 'text-white';
             } else if (value.includes('RECONDICIONAR')) {
                 bgColor = 'bg-yellow-500';
                 textColor = 'text-white';
-            } else if (value.includes('Não Informado')) {
-                bgColor = 'bg-slate-200';
-                textColor = 'text-gray-800';
-            }
+            } 
 
+            // Se for 'Não Informado' ou outro fallback, mantém o padrão cinza.
             select.classList.add(bgColor, textColor);
         }
         
