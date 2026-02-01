@@ -39,12 +39,6 @@
             padding: 8px;
             border-radius: 6px;
         }
-        
-        /* Estilo para dropdowns no estado TROCAR */
-        .status-select.bg-red-600 {
-            background-color: #DC2626 !important; /* Força o vermelho */
-            color: white !important;
-        }
     </style>
 </head>
 <body class="bg-slate-100 pt-20">
@@ -362,7 +356,7 @@
 
         // Dados estáticos para o formulário
         const STATUS_OPTIONS_EXTERNAL = ['Não Informado', 'PEÇA OK', 'RECONDICIONAR', 'TROCAR'];
-        const STATUS_OPTIONS_CARACOL = ['PEÇA OK', 'RECONDICIONAR', 'TROCAR']; // CONDENAR COMPLETO É UMA OPÇÃO GLOBAL
+        const STATUS_OPTIONS_CARACOL = ['PEÇA OK', 'RECONDICIONAR', 'TROCAR']; 
 
         const ANALYSIS_ITEMS = {
             tab1: ['Abraçadeiras', 'Mangueiras', 'Flanges', 'Canos', 'Calços', 'Coletor', 'Prisioneiros'],
@@ -455,6 +449,8 @@
             const createContent = (tabKey, options) => ANALYSIS_ITEMS[tabKey].map(item => createFormRow(item, options)).join('');
             const tab1Content = createContent('tab1', STATUS_OPTIONS_EXTERNAL);
             const tab2Content = createContent('tab2', STATUS_OPTIONS_EXTERNAL);
+            
+            // Tab 3: Conteúdo com o checkbox CONDENAR GLOBAL
             const tab3Content = `
                 <!-- Checkbox Global Condenar Caracol -->
                 <div class="p-4 mb-4 border border-red-300 rounded-lg bg-white flex items-center justify-between">
@@ -501,7 +497,7 @@
             if (value.includes('OK')) {
                 bgColor = 'bg-green-500';
                 textColor = 'text-white';
-            } else if (value.includes('TROCAR') || value.includes('PEÇA')) { // Corrigido para incluir 'TROCAR PEÇA'
+            } else if (value.includes('TROCAR') || value.includes('PEÇA')) { 
                 bgColor = 'bg-red-600';
                 textColor = 'text-white';
             } else if (value.includes('RECONDICIONAR')) {
@@ -541,7 +537,6 @@
             document.querySelectorAll('.os-card').forEach(card => card.classList.remove('active'));
             document.querySelector(`.os-card[data-order-id="${order.id}"]`).classList.add('active');
             
-            // Resumo (Placeholder)
             document.getElementById('substituicao-resumo').textContent = 'Anexo: ' + (order.maintenance_extras && order.maintenance_extras.geometry ? 'Geometria Variável' : 'Nenhuma peça.');
             document.getElementById('servicos-resumo').textContent = 'Observações: ' + (order.observation || 'Nenhum serviço.');
         }
@@ -551,7 +546,7 @@
             const WEBHOOK_GET = WEBHOOK_GET_ANALYSIS;
             
             filaContainer.innerHTML = '';
-            loadingMessage.classList.remove('hidden');
+            loadingMessage.classList.remove('hidden'); // CORRIGIDO PARA USAR VARIÁVEL MAPEADA
             
             try {
                 const response = await fetch(WEBHOOK_GET, { method: 'GET', headers: { 'Content-Type': 'application/json' } });
@@ -582,31 +577,31 @@
                     return order;
                 });
                 
-                document.getElementById('loading-message').classList.add('hidden');
+                loadingMessage.classList.add('hidden'); // CORRIGIDO PARA USAR VARIÁVEL MAPEADA
                 
                 if (currentOrders.length === 0) {
-                    document.getElementById('fila-de-analise-container').innerHTML = '<p class="text-gray-500 text-center mt-4">Nenhuma ordem de serviço na fila de análise.</p>';
-                    document.getElementById('fila-count').textContent = '0';
+                    filaContainer.innerHTML = '<p class="text-gray-500 text-center mt-4">Nenhuma ordem de serviço na fila de análise.</p>';
+                    filaCountSpan.textContent = '0';
                     return;
                 }
 
-                document.getElementById('fila-count').textContent = currentOrders.length;
+                filaCountSpan.textContent = currentOrders.length;
                 
                 currentOrders.forEach(orderToRender => {
-                    document.getElementById('fila-de-analise-container').insertAdjacentHTML('beforeend', renderOrderCard(orderToRender));
+                    filaContainer.insertAdjacentHTML('beforeend', renderOrderCard(orderToRender));
                 });
                 
                 addCardClickListeners();
 
             } catch (error) {
                 console.error("Erro ao carregar ordens:", error);
-                document.getElementById('loading-message').textContent = `Erro ao carregar a fila. ${error.message}.`;
-                document.getElementById('loading-message').classList.remove('hidden');
-                document.getElementById('fila-count').textContent = 'ERRO';
+                loadingMessage.textContent = `Erro ao carregar a fila. ${error.message}.`; // CORRIGIDO PARA USAR VARIÁVEL MAPEADA
+                loadingMessage.classList.remove('hidden');
+                filaCountSpan.textContent = 'ERRO';
             }
         }
         
-        // Funções de Modal (Mantidas para referência, mas não relevantes para o fluxo ANA)
+        // Funções de Modal (Mantidas, mas não relevantes para o fluxo ANA)
         function showSuccessModal() { /* ... */ }
         function showDispatchSuccessModal(count) { /* ... */ }
         function closeModal() { /* ... */ }
@@ -634,12 +629,11 @@
         }
         
         document.addEventListener('DOMContentLoaded', () => {
-            // Mapeamento dos elementos DOM (Feito DENTRO do DOMContentLoaded)
+            // Mapeamento dos elementos DOM
             filaContainer = document.getElementById('fila-de-analise-container');
             filaCountSpan = document.getElementById('fila-count');
             loadingMessage = document.getElementById('loading-message');
             
-            // Mapeamento dos Listeners (Certificando-se que os IDs existem no HTML)
             const formElement = document.getElementById('analysis-form');
             const logoutBtn = document.getElementById('logout-button');
             const tabButtons = document.querySelectorAll('.tab-button');
