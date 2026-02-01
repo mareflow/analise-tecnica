@@ -236,7 +236,7 @@
         </div>
     </main>
     
-    <!-- MODAIS (Mantidos, mas sem listeners problemáticos) -->
+    <!-- MODAIS (Mantidos) -->
     <div id="success-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-[100]">
         <div class="bg-white w-full max-w-sm rounded-xl shadow-2xl p-6 text-center">
             <div class="flex flex-col items-center mb-4">
@@ -311,7 +311,7 @@
         </div>
     </div>
 
-    <!-- MODAL DE CONFIRMAÇÃO DE DESPACHO (Mantido no HTML para consistência global, mas não usado pelo JS deste arquivo) -->
+    <!-- MODAL DE CONFIRMAÇÃO DE DESPACHO (Mantido no HTML, mas não usado pelo JS deste arquivo) -->
     <div id="confirm-dispatch-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-[100]">
         <div class="bg-white w-full max-w-sm rounded-xl shadow-2xl p-6 text-center">
             <svg class="w-12 h-12 text-yellow-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -380,7 +380,7 @@
         
         const FALLBACK_USER_UID = '8ab0d7ed-055c-4480-a1af-eb0b08894682';
 
-        // Variáveis DOM (usadas apenas dentro do DOMContentLoaded, mas mantidas aqui para escopo)
+        // Variáveis DOM (apenas declaração para escopo global)
         let filaContainer, filaCountSpan, loadingMessage, modal, successModal, detailsModal, confirmDispatchModal, dispatchSuccessModal, confirmDispatchMessage, dispatchSuccessMessage, form, baseTrocaCheck, baseTrocaRadiosDiv, successOkBtn, closeDetailsBtn, dispatchAllBtn, confirmDispatchBtn, cancelDispatchBtn, dispatchSuccessOkBtn;
 
 
@@ -524,7 +524,6 @@
             document.querySelectorAll('.os-card').forEach(card => card.classList.remove('active'));
             document.querySelector(`.os-card[data-order-id="${order.id}"]`).classList.add('active');
             
-            // Resumo (Placeholder)
             document.getElementById('substituicao-resumo').textContent = 'Anexo: ' + (order.maintenance_extras && order.maintenance_extras.geometry ? 'Geometria Variável' : 'Nenhuma peça.');
             document.getElementById('servicos-resumo').textContent = 'Observações: ' + (order.observation || 'Nenhum serviço.');
         }
@@ -533,8 +532,8 @@
         async function loadAnalysisOrders() { 
             const WEBHOOK_GET = WEBHOOK_GET_ANALYSIS;
             
-            document.getElementById('fila-de-analise-container').innerHTML = '';
-            document.getElementById('loading-message').classList.remove('hidden');
+            filaContainer.innerHTML = '';
+            loadingMessage.classList.remove('hidden');
             
             try {
                 const response = await fetch(WEBHOOK_GET, { method: 'GET', headers: { 'Content-Type': 'application/json' } });
@@ -565,27 +564,27 @@
                     return order;
                 });
                 
-                document.getElementById('loading-message').classList.add('hidden');
+                loadingMessage.classList.add('hidden');
                 
                 if (currentOrders.length === 0) {
-                    document.getElementById('fila-de-analise-container').innerHTML = '<p class="text-gray-500 text-center mt-4">Nenhuma ordem de serviço na fila de análise.</p>';
-                    document.getElementById('fila-count').textContent = '0';
+                    filaContainer.innerHTML = '<p class="text-gray-500 text-center mt-4">Nenhuma ordem de serviço na fila de análise.</p>';
+                    filaCountSpan.textContent = '0';
                     return;
                 }
 
-                document.getElementById('fila-count').textContent = currentOrders.length;
+                filaCountSpan.textContent = currentOrders.length;
                 
                 currentOrders.forEach(orderToRender => {
-                    document.getElementById('fila-de-analise-container').insertAdjacentHTML('beforeend', renderOrderCard(orderToRender));
+                    filaContainer.insertAdjacentHTML('beforeend', renderOrderCard(orderToRender));
                 });
                 
                 addCardClickListeners();
 
             } catch (error) {
                 console.error("Erro ao carregar ordens:", error);
-                document.getElementById('loading-message').textContent = `Erro ao carregar a fila. ${error.message}.`;
-                document.getElementById('loading-message').classList.remove('hidden');
-                document.getElementById('fila-count').textContent = 'ERRO';
+                loadingMessage.textContent = `Erro ao carregar a fila. ${error.message}.`;
+                loadingMessage.classList.remove('hidden');
+                filaCountSpan.textContent = 'ERRO';
             }
         }
         
@@ -598,8 +597,9 @@
         function closeDispatchSuccessModal() { /* ... */ }
         async function dispatchAllOrders(osIds) { /* ... */ }
 
+
         // ====================================================================
-        // 4. INICIALIZAÇÃO DOS LISTENERS
+        // 4. INICIALIZAÇÃO DOS LISTENERS (CORRIGIDA)
         // ====================================================================
 
         function addCardClickListeners() {
@@ -616,14 +616,11 @@
         }
         
         document.addEventListener('DOMContentLoaded', () => {
-            // Mapeamento dos elementos DOM (Agora dentro de DOMContentLoaded)
+            // Mapeamento dos elementos DOM (Feito DENTRO do DOMContentLoaded)
             filaContainer = document.getElementById('fila-de-analise-container');
             filaCountSpan = document.getElementById('fila-count');
             loadingMessage = document.getElementById('loading-message');
-            // Mapeamento de outros elementos essenciais (para listeners)
-            // OBS: Os elementos de Despacho (confirmDispatchModal, etc.) foram omitidos aqui, resolvendo o ReferenceError.
-            
-            // Mapeamento dos Listeners (Certificando-se que os IDs existem no HTML)
+            // Mapeamento dos Listeners (para o escopo local do DCL)
             const formElement = document.getElementById('analysis-form');
             const logoutBtn = document.getElementById('logout-button');
             const tabButtons = document.querySelectorAll('.tab-button');
