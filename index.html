@@ -1,3 +1,5 @@
+--- START OF FILE Paste February 01, 2026 - 7:14PM ---
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -236,19 +238,43 @@
         </div>
     </main>
     
-    <!-- MODAIS (Mantidos) -->
-    <div id="success-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-[100]">
+    <!-- MODAIS - INÍCIO -->
+    
+    <!-- NOVO MODAL DE CONFIRMAÇÃO DE ANÁLISE -->
+    <div id="analysis-confirmation-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-[100]">
+        <div class="bg-white w-full max-w-sm rounded-xl shadow-2xl p-6 text-center">
+            <svg class="w-12 h-12 text-yellow-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+            <h3 class="text-xl font-bold text-gray-800 mb-2">Confirmar Finalização da Análise</h3>
+            <p class="text-gray-600 mb-6">Tem certeza que deseja finalizar a análise e gerar os relatórios para a Ordem de Serviço atual?</p>
+            
+            <div class="flex justify-center space-x-3">
+                <button id="cancel-analysis-btn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2 px-4 rounded-lg transition duration-150">
+                    Cancelar
+                </button>
+                <button id="confirm-analysis-btn" class="bg-brand-blue hover:bg-brand-blue-dark text-white font-medium py-2 px-4 rounded-lg transition duration-150">
+                    Sim, Finalizar Análise
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NOVO MODAL DE SUCESSO DE ANÁLISE SALVA -->
+    <div id="analysis-saved-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-[100]">
         <div class="bg-white w-full max-w-sm rounded-xl shadow-2xl p-6 text-center">
             <div class="flex flex-col items-center mb-4">
                 <svg class="w-12 h-12 text-green-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                <h3 class="text-xl font-bold text-gray-800">Sucesso!</h3>
-                <p class="text-gray-600 mt-2">Ordem de Serviço criada com sucesso.</p>
+                <h3 class="text-xl font-bold text-gray-800">Análise Salva!</h3>
+                <p class="text-gray-600 mt-2">Os relatórios foram gerados e a OS foi movida para o próximo estágio.</p>
             </div>
-            <button id="success-modal-ok-btn" class="w-full bg-brand-blue hover:bg-brand-blue-dark text-white font-medium py-2 px-4 rounded-lg transition duration-150">
+            <button id="analysis-saved-ok-btn" class="w-full bg-brand-blue hover:bg-brand-blue-dark text-white font-medium py-2 px-4 rounded-lg transition duration-150">
                 OK
             </button>
         </div>
     </div>
+    
+    <!-- MODAIS EXISTENTES (success-modal removido, pois o novo analysis-saved-modal o substitui no fluxo) -->
     
     <div id="dispatch-success-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-[100]">
         <div class="bg-white w-full max-w-sm rounded-xl shadow-2xl p-6 text-center">
@@ -311,7 +337,6 @@
         </div>
     </div>
 
-    <!-- MODAL DE CONFIRMAÇÃO DE DESPACHO (Mantido no HTML para consistência global) -->
     <div id="confirm-dispatch-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-[100]">
         <div class="bg-white w-full max-w-sm rounded-xl shadow-2xl p-6 text-center">
             <svg class="w-12 h-12 text-yellow-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -330,6 +355,7 @@
             </div>
         </div>
     </div>
+    <!-- MODAIS - FIM -->
 
 
     <!-- Inclusão da biblioteca do Supabase via CDN -->
@@ -382,6 +408,8 @@
 
         // Variáveis DOM declaradas aqui para o escopo global (serão populadas em DCL)
         let filaContainer, filaCountSpan, loadingMessage, modal, successModal, detailsModal, confirmDispatchModal, dispatchSuccessModal, confirmDispatchMessage, dispatchSuccessMessage, form, baseTrocaCheck, baseTrocaRadiosDiv, successOkBtn, closeDetailsBtn, dispatchAllBtn, confirmDispatchBtn, cancelDispatchBtn, dispatchSuccessOkBtn;
+        // NOVAS VARIÁVEIS DO MODAL DE ANÁLISE
+        let analysisConfirmationModal, confirmAnalysisBtn, cancelAnalysisBtn, analysisSavedModal, analysisSavedOkBtn;
 
 
         // ====================================================================
@@ -604,6 +632,27 @@
             }
         }
         
+        // Funções de Modal
+        function showAnalysisConfirmationModal() {
+            analysisConfirmationModal.classList.remove('hidden');
+            analysisConfirmationModal.classList.add('flex');
+        }
+
+        function closeAnalysisConfirmationModal() {
+            analysisConfirmationModal.classList.add('hidden');
+            analysisConfirmationModal.classList.remove('flex');
+        }
+
+        function showAnalysisSavedModal() {
+            analysisSavedModal.classList.remove('hidden');
+            analysisSavedModal.classList.add('flex');
+        }
+        
+        function closeAnalysisSavedModal() {
+            analysisSavedModal.classList.add('hidden');
+            analysisSavedModal.classList.remove('flex');
+        }
+
         // Funções de Modal (Mantidas, mas não relevantes para o fluxo ANA)
         function showSuccessModal() { /* ... */ }
         function showDispatchSuccessModal(count) { /* ... */ }
@@ -613,6 +662,126 @@
         function closeDispatchSuccessModal() { /* ... */ }
         async function dispatchAllOrders(osIds) { /* ... */ }
 
+        // ====================================================================
+        // 3. COLETA E SUBMISSÃO DE DADOS (NOVO)
+        // ====================================================================
+
+        // Função auxiliar para coletar dados das abas de checklist
+        function collectChecklistData(tabKey) {
+            const items = ANALYSIS_ITEMS[tabKey];
+            const data = [];
+            
+            // Lógica específica para o Checkbox Global Condenar Caracol (Tab 3)
+            if (tabKey === 'tab3') {
+                const condemnCheck = document.getElementById('condenar-caracol-check');
+                if (condemnCheck && condemnCheck.checked) {
+                     // Adiciona um item de checklist que representa a Condenação Global
+                    data.push({
+                        name: "CONDENAR CARACOL COMPLETO",
+                        status: "TROCAR", // Status para condenação global
+                        obs: "Condenado pela análise técnica."
+                    });
+                }
+            }
+
+            items.forEach(itemName => {
+                const cleanName = itemName.replace(/\s+/g, '_').toLowerCase();
+                const statusSelect = document.getElementById(`status-${cleanName}`);
+                const obsTextarea = document.getElementById(`obs-${cleanName}`);
+
+                // Inclui apenas itens que não estão como 'Não Informado' (que é o valor default)
+                if (statusSelect && obsTextarea && statusSelect.value !== 'Não Informado') {
+                    data.push({
+                        name: itemName,
+                        status: statusSelect.value,
+                        obs: obsTextarea.value.trim()
+                    });
+                }
+            });
+            return data;
+        }
+
+        // Função principal para coletar todos os dados do formulário
+        async function collectFormData() {
+            const generalObservations = document.getElementById('observacoes-analise').value.trim();
+            const patternSelect = document.getElementById('pattern-select').value;
+            
+            const payload = {
+                os_id: activeOSId, 
+                user_id: await getCurrentUserUID(),
+                pattern: patternSelect || null,
+                general_observations: generalObservations,
+                report_summary: '', // Placeholder, conforme solicitação
+                parts_needed: '',   // Placeholder, conforme solicitação
+                
+                // Dados das Abas (Checklists)
+                attachments: collectChecklistData('tab1'),
+                general_repairs: collectChecklistData('tab2'), 
+                snail_checklist: collectChecklistData('tab3'),  
+                
+                // Adicionais Fixos (Atuador, Geometria...)
+                maintenance_extras: {
+                    actuator: {
+                        came: document.getElementById('check-actuator').checked,
+                        status: document.getElementById('status-actuator').value,
+                    },
+                    geometry: {
+                        came: document.getElementById('check-geometry').checked,
+                        status: document.getElementById('status-geometry').value,
+                    },
+                    geometryStem: {
+                        came: document.getElementById('check-geometryStem').checked,
+                        status: document.getElementById('status-geometryStem').value,
+                    },
+                    geometryFlange: {
+                        came: document.getElementById('check-geometryFlange').checked,
+                        status: document.getElementById('status-geometryFlange').value,
+                    },
+                }
+            };
+
+            return payload;
+        }
+
+        // Função para submeter a análise
+        async function submitAnalysis() {
+            if (!activeOSId) {
+                alert('Erro: Nenhuma Ordem de Serviço selecionada.');
+                return;
+            }
+            
+            // Desabilita o botão para evitar cliques múltiplos
+            confirmAnalysisBtn.disabled = true;
+            confirmAnalysisBtn.textContent = 'Enviando...';
+
+            const payload = await collectFormData();
+
+            try {
+                const response = await fetch(WEBHOOK_SAVE_ANALYSIS, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (response.ok || response.status === 201) {
+                    closeAnalysisConfirmationModal();
+                    showAnalysisSavedModal();
+                } else {
+                    const errorBody = await response.text();
+                    alert(`Falha ao salvar a análise. Status: ${response.status}. Detalhe: ${errorBody.substring(0, 100)}...`);
+                    closeAnalysisConfirmationModal();
+                }
+
+            } catch (error) {
+                console.error("Erro ao enviar análise:", error);
+                alert(`Erro de conexão ao salvar a análise: ${error.message}`);
+                closeAnalysisConfirmationModal();
+            } finally {
+                // Restaura o botão
+                confirmAnalysisBtn.disabled = false;
+                confirmAnalysisBtn.textContent = 'Sim, Finalizar Análise';
+            }
+        }
 
         // ====================================================================
         // 4. INICIALIZAÇÃO DOS LISTENERS
@@ -640,6 +809,13 @@
             const formElement = document.getElementById('analysis-form');
             const logoutBtn = document.getElementById('logout-button');
             const tabButtons = document.querySelectorAll('.tab-button');
+            
+            // NOVO: Mapeamento dos Modais de Análise
+            analysisConfirmationModal = document.getElementById('analysis-confirmation-modal');
+            confirmAnalysisBtn = document.getElementById('confirm-analysis-btn');
+            cancelAnalysisBtn = document.getElementById('cancel-analysis-btn');
+            analysisSavedModal = document.getElementById('analysis-saved-modal');
+            analysisSavedOkBtn = document.getElementById('analysis-saved-ok-btn');
             
             // 1. Renderiza o formulário padrão (popula as opções das abas)
             renderAnalysisForm();
@@ -670,10 +846,31 @@
                 });
             });
             
-            // Listener do Form. Finalizar Análise (POST)
+            // NOVO: Listener do Form. Finalizar Análise (POST) -> Aciona o modal de confirmação
             formElement.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                alert('Ação "Finalizar Análise e Gerar Relatórios" - Envio POST para Webhook: ' + WEBHOOK_SAVE_ANALYSIS);
+                if (!activeOSId) {
+                    alert('Selecione uma Ordem de Serviço para finalizar a análise.');
+                    return;
+                }
+                showAnalysisConfirmationModal();
+            });
+
+            // NOVO: Listener do botão de confirmação dentro do modal
+            confirmAnalysisBtn.addEventListener('click', submitAnalysis);
+
+            // NOVO: Listeners para fechar o modal de confirmação
+            cancelAnalysisBtn.addEventListener('click', closeAnalysisConfirmationModal);
+
+            // NOVO: Listener para fechar o modal de sucesso e recarregar
+            analysisSavedOkBtn.addEventListener('click', async () => {
+                closeAnalysisSavedModal();
+                // Oculta o formulário e mostra o placeholder
+                document.getElementById('analysis-form-wrapper').classList.add('hidden');
+                document.getElementById('initial-placeholder').classList.remove('hidden');
+                // Recarrega a lista de ordens para atualizar a fila
+                await loadAnalysisOrders();
+                activeOSId = null; // Limpa a OS ativa
             });
             
             // Chamada de Inicialização
