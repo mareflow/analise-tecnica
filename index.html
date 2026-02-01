@@ -497,12 +497,15 @@
             if (value.includes('OK')) {
                 bgColor = 'bg-green-500';
                 textColor = 'text-white';
-            } else if (value.includes('TROCAR') || value.includes('PEÇA')) { 
+            } else if (value.includes('TROCAR')) { 
                 bgColor = 'bg-red-600';
                 textColor = 'text-white';
             } else if (value.includes('RECONDICIONAR')) {
                 bgColor = 'bg-yellow-500';
                 textColor = 'text-white';
+            } else if (value.includes('Não Informado')) {
+                bgColor = 'bg-slate-200';
+                textColor = 'text-gray-800';
             }
 
             select.classList.add(bgColor, textColor);
@@ -546,7 +549,7 @@
             const WEBHOOK_GET = WEBHOOK_GET_ANALYSIS;
             
             filaContainer.innerHTML = '';
-            loadingMessage.classList.remove('hidden'); // CORRIGIDO PARA USAR VARIÁVEL MAPEADA
+            loadingMessage.classList.remove('hidden');
             
             try {
                 const response = await fetch(WEBHOOK_GET, { method: 'GET', headers: { 'Content-Type': 'application/json' } });
@@ -577,7 +580,7 @@
                     return order;
                 });
                 
-                loadingMessage.classList.add('hidden'); // CORRIGIDO PARA USAR VARIÁVEL MAPEADA
+                loadingMessage.classList.add('hidden');
                 
                 if (currentOrders.length === 0) {
                     filaContainer.innerHTML = '<p class="text-gray-500 text-center mt-4">Nenhuma ordem de serviço na fila de análise.</p>';
@@ -595,7 +598,7 @@
 
             } catch (error) {
                 console.error("Erro ao carregar ordens:", error);
-                loadingMessage.textContent = `Erro ao carregar a fila. ${error.message}.`; // CORRIGIDO PARA USAR VARIÁVEL MAPEADA
+                loadingMessage.textContent = `Erro ao carregar a fila. ${error.message}.`;
                 loadingMessage.classList.remove('hidden');
                 filaCountSpan.textContent = 'ERRO';
             }
@@ -641,11 +644,18 @@
             // 1. Renderiza o formulário padrão (popula as opções das abas)
             renderAnalysisForm();
             
-            // Adiciona listeners para mudança de cor nos selects de status
+            // Adiciona listeners para mudança de cor nos selects de status (Todos os selects da página)
             document.querySelectorAll('.status-select').forEach(select => {
                 select.addEventListener('change', updateStatusSelectStyle);
                 updateStatusSelectStyle({ target: select });
             });
+
+            // Adiciona listeners para mudança de cor nos selects da seção de ADICIONAIS FIXOS
+            document.querySelectorAll('select[id^="status-"]').forEach(select => {
+                select.addEventListener('change', updateStatusSelectStyle);
+                updateStatusSelectStyle({ target: select });
+            });
+
 
             // Listener de Logout
             logoutBtn.addEventListener('click', async () => {
