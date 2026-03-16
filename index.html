@@ -13,6 +13,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
+    <!-- Biblioteca Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- Estilos Customizados -->
     <style>
         body {
@@ -395,6 +397,19 @@
             tab1: ['Abraçadeiras', 'Mangueiras', 'Flanges', 'Canos', 'Calços', 'Coletor', 'Prisioneiros'],
             tab2: ['Parafusos', 'Carcaça Compressor', 'Carcaça Central', 'Rotor Compressor', 'Eixo Rotor', 'Prato Compressor', 'Colar'],
             tab3: ['Trincas (Parede)', 'Roscas / Prisioneiros', 'Assento da Válvula', 'Faceamento']
+        };
+
+        const PADROES_LOGICA = {
+            "Padrão 1":  { eixo: "BOM / OK", rotor: "BOM / OK", ct: "BOM / OK" },
+            "Padrão 2":  { eixo: "BOM / OK", rotor: "BOM / OK", ct: "TROCAR PEÇA" },
+            "Padrão 2A": { eixo: "RECONDICIONAR", rotor: "BOM / OK", ct: "BOM / OK" },
+            "Padrão 3":  { eixo: "BOM / OK", rotor: "TROCAR PEÇA", ct: "BOM / OK" },
+            "Padrão 4":  { eixo: "BOM / OK", rotor: "TROCAR PEÇA", ct: "TROCAR PEÇA" },
+            "Padrão 4A": { eixo: "RECONDICIONAR", rotor: "TROCAR PEÇA", ct: "TROCAR PEÇA" },
+            "Padrão 5":  { eixo: "TROCAR PEÇA", rotor: "BOM / OK", ct: "BOM / OK" },
+            "Padrão 6":  { eixo: "TROCAR PEÇA", rotor: "TROCAR PEÇA", ct: "BOM / OK" },
+            "Padrão 7":  { eixo: "TROCAR PEÇA", rotor: "BOM / OK", ct: "TROCAR PEÇA" },
+            "Padrão 8":  { eixo: "TROCAR PEÇA", rotor: "TROCAR PEÇA", ct: "TROCAR PEÇA" }
         };
 
         const MAINTENANCE_MAP = {
@@ -830,6 +845,8 @@ function populateForm(order) {
                 });
                 
                 if (response.ok || response.status === 201) {
+                    // UNÍSSONO: Gera o Excel automaticamente após salvar no banco
+                    gerarRelatorioExcel(payload);
                     closeAnalysisConfirmationModal();
                     showAnalysisSavedModal();
                 } else {
@@ -895,8 +912,32 @@ function populateForm(order) {
             analysisSavedModal = document.getElementById('analysis-saved-modal');
             analysisSavedOkBtn = document.getElementById('analysis-saved-ok-btn');
             
-            // 1. Renderiza o formulário padrão (popula as opções das abas)
+            // 1. Renderiza o formulário padrão
             renderAnalysisForm();
+
+            // 2. Inteligência de Padrões
+            document.getElementById('pattern-select').addEventListener('change', function(e) {
+                const data = PADROES_LOGICA[e.target.value];
+                if (data) {
+                    const fields = {
+                        'status-eixo_rotor': data.eixo,
+                        'status-rotor_compressor': data.rotor,
+                        'status-carcaca_compressor': data.ct
+                    };
+                    Object.entries(fields).forEach(([id, val]) => {
+                        const el = document.getElementById(id);
+                        if (el) {
+                            el.value = val;
+                            el.dispatchEvent(new Event('change'));
+                        }
+                    });
+                }
+            });
+
+            // 3. Filtro Anti-'A' nos itens (exceto padrões)
+            document.querySelectorAll('.status-select option').forEach(opt => {
+                if (opt.value.includes('A') && !opt.parentElement.id.includes('pattern')) opt.remove();
+            });
             
             // Adiciona listeners para mudança de cor nos selects de status (Todos os selects da página)
             document.querySelectorAll('.status-select').forEach(select => {
@@ -1068,6 +1109,29 @@ function abrirRaioX(id) {
             `;
             document.getElementById('raiox-modal').classList.remove('hidden');
             document.getElementById('raiox-modal').classList.add('flex');
+        }
+
+        // FUNÇÃO PARA RECEBER CASCO E VOLTAR PARA A FILA DE ANÁLISE
+        async function liberarCasco(id) {
+            if(!confirm("Confirmar recebimento do casco? A OS voltará para a fila de produção.")) return;
+            
+            try {
+                const response = await fetch('https://teste.mareflow.com.br/webhook/orders/update-status', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ os_id: id, status: 'Aguardando Análise Técnica' })
+                });
+
+                if (response.ok) {
+                    alert("Casco recebido com sucesso!");
+                    await loadAnalysisOrders(); // UNÍSSONO: Recarrega a sidebar e zera o Standby
+                } else {
+                    alert("Erro ao atualizar status no servidor.");
+                }
+            } catch (err) {
+                console.error("Erro técnico:", err);
+                alert("Falha de conexão com o sistema.");
+            }
         }
 </script>
 </body>
