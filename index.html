@@ -923,6 +923,23 @@ function populateForm(order) {
 // 1. Renderiza o formulário padrão
             renderAnalysisForm();
 
+            // Gatilho: Condenar Caracol Completo (Checkbox Tab 3)
+            const condemnCheck = document.getElementById('condenar-caracol-check');
+            if (condemnCheck) {
+                condemnCheck.addEventListener('change', function(e) {
+                    if (e.target.checked) {
+                        const caracolItems = ['trincas_(parede)', 'roscas_/_prisioneiros', 'assento_da_válvula', 'faceamento'];
+                        caracolItems.forEach(item => {
+                            const select = document.getElementById('status-' + item);
+                            if (select) {
+                                select.value = 'TROCAR';
+                                updateStatusSelectStyle(select);
+                            }
+                        });
+                    }
+                });
+            }
+
             document.getElementById('pattern-select').addEventListener('change', function(e) {
                 const padrao = e.target.value;
                 const dados = PADROES_LOGICA[padrao];
@@ -1139,6 +1156,29 @@ function abrirRaioX(id) {
                 console.error("Erro técnico:", err);
                 alert("Falha de conexão com o sistema.");
             }
+        }
+
+        // Função para Gerar Excel com nomes técnicos (CT, CCO, CCE, etc)
+        function gerarRelatorioExcel(payload) {
+            const mapping = {
+                'Carcaça Compressora': 'CCO',
+                'Carcaça Central': 'CCE',
+                'Eixo Rotor': 'Eixo',
+                'Rotor Compressor': 'Rotor',
+                'Trincas (Parede)': 'CT'
+            };
+
+            const data = [
+                ["ITEM", "STATUS", "OBSERVAÇÃO"],
+                ...payload.attachments.map(i => [i.name, i.status, i.obs]),
+                ...payload.general_repairs.map(i => [mapping[i.name] || i.name, i.status, i.obs]),
+                ...payload.snail_checklist.map(i => [mapping[i.name] || i.name, i.status, i.obs])
+            ];
+
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Análise Técnica");
+            XLSX.writeFile(wb, `Analise_${payload.os_id}.xlsx`);
         }
 </script>
 </body>
