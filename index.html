@@ -580,24 +580,64 @@
         }
 
         // Preenche o formulário ao selecionar uma OS
-        function populateForm(order) {
-            // UNÍSSONO: Garante que qualquer modal aberto seja fechado ao carregar o formulário técnico
+function populateForm(order) {
+            activeOSId = order.id;
             const modal = document.getElementById('raiox-modal');
             if(modal) modal.classList.add('hidden');
             
-            activeOSId = order.id;
-            document.getElementById('initial-placeholder').classList.add('hidden');
             document.getElementById('analysis-form-wrapper').classList.remove('hidden');
-            
+            document.getElementById('initial-placeholder').classList.add('hidden');
             document.getElementById('form-title').textContent = `Formulário de Análise - ${order.business_id}`;
-            
-            switchTab('tab1'); 
 
-            document.querySelectorAll('.os-card').forEach(card => card.classList.remove('active'));
-            document.querySelector(`.os-card[data-order-id="${order.id}"]`).classList.add('active');
+            // --- UNÍSSONO: Lógica dos Itens Adicionais (Atuador, Geometria, etc.) ---
+            const extras = typeof order.maintenance_extras === 'string' ? JSON.parse(order.maintenance_extras) : order.maintenance_extras;
             
-            document.getElementById('substituicao-resumo').textContent = 'Anexo: ' + (order.maintenance_extras && order.maintenance_extras.geometry ? 'Geometria Variável' : 'Nenhuma peça.');
-            document.getElementById('servicos-resumo').textContent = 'Observações: ' + (order.observation || 'Nenhum serviço.');
+            const mapping = {
+                actuator: { check: 'check-actuator', status: 'status-actuator' },
+                geometry: { check: 'check-geometry', status: 'status-geometry' },
+                geometryStem: { check: 'check-geometryStem', status: 'status-geometryStem' },
+                geometryFlange: { check: 'check-geometryFlange', status: 'status-geometryFlange' }
+            };
+
+            Object.entries(mapping).forEach(([key, fields]) => {
+                const hasItem = extras && extras[key] === true;
+                const checkEl = document.getElementById(fields.check);
+                const statusEl = document.getElementById(fields.status);
+
+                if (checkEl && statusEl) {
+                    checkEl.checked = hasItem;
+                    checkEl.disabled = true; // O técnico não pode mudar o que veio/não veio aqui, só o Pré-Vendas
+                    
+                    if (hasItem) {
+                        statusEl.disabled = false;
+                        statusEl.parentElement.classList.remove('opacity-40', 'bg-gray-100');
+                    } else {
+                        statusEl.value = "NÃO RECEBIDO";
+                        statusEl.disabled = true;
+                        statusEl.parentElement.classList.add('opacity-40', 'bg-gray-100');
+                    }
+                    updateStatusSelectStyle({ target: statusEl });
+                }
+            });
+
+            // --- UNÍSSONO: Lógica de Padrões (1-8) ---
+            // Exemplo: Se for Padrão 8 (Conjunto Novo), já marca Eixo e Rotor para Trocar
+            if (order.difficulty) {
+                document.getElementById('pattern-select').value = `Padrão ${order.difficulty}`;
+                aplicarPadraoManutencao(order.difficulty);
+            }
+
+            switchTab('tab1');
+        }
+
+        function aplicarPadraoManutencao(nivel) {
+            // Regra de negócio: Níveis altos (ex: 7 e 8) sugerem troca de componentes core
+            if (nivel >= 7) {
+                const eixo = document.getElementById('status-eixo_rotor');
+                const rotor = document.getElementById('status-rotor_compressor');
+                if (eixo) { eixo.value = 'TROCAR'; updateStatusSelectStyle({target: eixo}); }
+                if (rotor) { rotor.value = 'TROCAR'; updateStatusSelectStyle({target: rotor}); }
+            }
         }
 
         // Carregamento de dados (Mantido)
