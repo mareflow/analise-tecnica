@@ -405,13 +405,11 @@
         };
 
         // Lógica de Padrões: Se não está OK, prioriza RECONDICIONAR em vez de trocar
-        const PADROES_LOGICA = {
+const PADROES_LOGICA = {
             "Padrão 1":  { eixo: "PEÇA OK", rotor: "PEÇA OK", ct: "PEÇA OK" },
             "Padrão 2":  { eixo: "PEÇA OK", rotor: "PEÇA OK", ct: "RECONDICIONAR" },
-            "Padrão 2A": { eixo: "RECONDICIONAR", rotor: "PEÇA OK", ct: "PEÇA OK" },
             "Padrão 3":  { eixo: "PEÇA OK", rotor: "RECONDICIONAR", ct: "PEÇA OK" },
             "Padrão 4":  { eixo: "PEÇA OK", rotor: "RECONDICIONAR", ct: "RECONDICIONAR" },
-            "Padrão 4A": { eixo: "RECONDICIONAR", rotor: "RECONDICIONAR", ct: "PEÇA OK" },
             "Padrão 5":  { eixo: "RECONDICIONAR", rotor: "PEÇA OK", ct: "PEÇA OK" },
             "Padrão 6":  { eixo: "RECONDICIONAR", rotor: "RECONDICIONAR", ct: "PEÇA OK" },
             "Padrão 7":  { eixo: "RECONDICIONAR", rotor: "PEÇA OK", ct: "RECONDICIONAR" },
@@ -774,7 +772,7 @@ const mapping = {
             }
 
             items.forEach(itemName => {
-                const cleanName = itemName.replace(/\s+/g, '_').toLowerCase();
+                const cleanName = itemName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '_').toLowerCase();
                 const statusSelect = document.getElementById(`status-${cleanName}`);
                 const obsTextarea = document.getElementById(`obs-${cleanName}`);
 
@@ -929,51 +927,34 @@ const mapping = {
                 const dados = PADROES_LOGICA[padrao];
                 
                 if (dados) {
-                    // IDs baseados na função createFormRow
                     const mapeamento = {
                         'status-eixo_rotor': dados.eixo,
                         'status-rotor_compressor': dados.rotor,
-                        'status-carcaça_compressor': dados.ct
+                        'status-carcaca_compressor': dados.ct // ID sem cedilha conforme cleanName novo
                     };
 
                     Object.entries(mapeamento).forEach(([id, valor]) => {
                         const el = document.getElementById(id);
                         if (el) {
                             el.value = valor;
-                            // Dispara o evento para atualizar a cor (verde/vermelho)
-                            updateStatusSelectStyle({ target: el });
-                        }
-                    });
-                }
-            });
-
-            // 2. Inteligência de Padrões
-            document.getElementById('pattern-select').addEventListener('change', function(e) {
-                const data = PADROES_LOGICA[e.target.value];
-                if (data) {
-                    const fields = {
-                        'status-eixo_rotor': data.eixo,
-                        'status-rotor_compressor': data.rotor,
-                        'status-carcaca_compressor': data.ct
-                    };
-                    Object.entries(fields).forEach(([id, val]) => {
-                        const el = document.getElementById(id);
-                        if (el) {
-                            el.value = val;
-                            el.dispatchEvent(new Event('change'));
+                            updateStatusSelectStyle(el); 
                         }
                     });
                 }
             });
 
             // 3. UNÍSSONO: Estilização de Cores TurboSul
-            window.updateStatusSelectStyle = function(el) {
-                el.classList.remove('bg-slate-200', 'bg-green-500', 'bg-yellow-500', 'bg-red-600', 'text-white', 'text-gray-800');
-                const val = el.value.toUpperCase();
-                if (val === 'PEÇA OK') el.classList.add('bg-green-500', 'text-white');
-                else if (val === 'RECONDICIONAR') el.classList.add('bg-yellow-500', 'text-white');
-                else if (val === 'TROCAR') el.classList.add('bg-red-600', 'text-white');
-                else el.classList.add('bg-slate-200', 'text-gray-800');
+window.updateStatusSelectStyle = function(el) {
+                const target = el.target || el; // Aceita evento ou elemento direto
+                if (!target || !target.classList) return;
+
+                target.classList.remove('bg-slate-200', 'bg-green-500', 'bg-yellow-500', 'bg-red-600', 'text-white', 'text-gray-800');
+                const val = target.value.toUpperCase();
+                
+                if (val === 'PEÇA OK') target.classList.add('bg-green-500', 'text-white');
+                else if (val === 'RECONDICIONAR') target.classList.add('bg-yellow-500', 'text-white');
+                else if (val === 'TROCAR' || val.includes('PEÇA')) target.classList.add('bg-red-600', 'text-white');
+                else target.classList.add('bg-slate-200', 'text-gray-800');
             };
             
             // Adiciona listeners para mudança de cor nos selects de status (Todos os selects da página)
