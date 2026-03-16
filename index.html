@@ -478,9 +478,12 @@
                 `;
             }
 
+            // UNÍSSONO: O card agora carrega o status para o listener decidir se abre Form ou Raio-X
             return `
-                <div class="os-card bg-white p-3 rounded-lg shadow border border-gray-200" data-order-id="${order.id}">
-                    <div onclick="abrirRaioX('${order.id}')">
+                <div class="os-card bg-white p-3 rounded-lg shadow border border-gray-200 cursor-pointer" 
+                     data-order-id="${order.id}" 
+                     data-status="${order.status}">
+                    <div>
                         <p class="text-base font-bold text-gray-800 mb-1 flex justify-between items-center">${order.business_id}
                             <span class="inline-block text-xs font-medium ${urgencyClass} px-2 py-0.5 rounded-full">${urgencyText}</span>
                         </p>
@@ -807,14 +810,22 @@
 
         function addCardClickListeners() {
             document.querySelectorAll('.os-card').forEach(card => {
-                card.addEventListener('click', (event) => {
-                    const orderId = event.currentTarget.dataset.orderId;
+                card.onclick = (event) => {
+                    const orderId = card.dataset.orderId;
+                    const orderStatus = card.dataset.status;
                     const orderData = currentOrders.find(o => o.id === orderId);
                     
-                    if (orderData) {
+                    if (!orderData) return;
+
+                    // Se estiver em Standby, abre apenas o Raio-X (Visualização)
+                    if (orderStatus === 'Standby / Aguardando Casco') {
+                        abrirRaioX(orderId);
+                    } 
+                    // Se for Fila normal, abre o Formulário Técnico (Ação)
+                    else {
                         populateForm(orderData);
                     }
-                });
+                };
             });
         }
         
@@ -938,8 +949,11 @@
 
             const targetList = activeTab === 'fila' ? fila : standby;
             if (filaContainer) {
-                filaContainer.innerHTML = targetList.length ? targetList.map(o => renderOrderCard(o)).join('') : '<p class="text-gray-500 text-center mt-4 uppercase font-black text-[10px]">Nenhuma ordem pendente.</p>';
-            }
+filaContainer.innerHTML = targetList.length ? targetList.map(o => renderOrderCard(o)).join('') : '<p class="text-gray-500 text-center mt-4 uppercase font-black text-[10px]">Nenhuma ordem pendente.</p>';
+            
+            // CHAMADA VITAL PARA O UNÍSSONO:
+            addCardClickListeners(); 
+        }
         }
 
         function abrirRaioX(id) {
