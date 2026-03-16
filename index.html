@@ -395,8 +395,8 @@
         let activeOSId = null;
 
         // Dados estáticos para o formulário
-        const STATUS_OPTIONS_EXTERNAL = ['PEÇA OK', 'RECONDICIONAR', 'TROCAR'];
-        const STATUS_OPTIONS_CARACOL = ['PEÇA OK', 'RECONDICIONAR', 'TROCAR']; 
+        const STATUS_OPTIONS_EXTERNAL = ['NÃO INFORMADO', 'PEÇA OK', 'RECONDICIONAR', 'TROCAR'];
+        const STATUS_OPTIONS_CARACOL = ['NÃO INFORMADO', 'PEÇA OK', 'RECONDICIONAR', 'TROCAR']; 
 
         const ANALYSIS_ITEMS = {
             tab1: ['Abraçadeiras', 'Mangueiras', 'Flanges', 'Canos', 'Calços', 'Coletor', 'Prisioneiros'],
@@ -406,15 +406,15 @@
 
         const PADROES_LOGICA = {
             "Padrão 1":  { eixo: "PEÇA OK", rotor: "PEÇA OK", ct: "PEÇA OK" },
-            "Padrão 2":  { eixo: "PEÇA OK", rotor: "PEÇA OK", ct: "TROCAR" },
+            "Padrão 2":  { eixo: "PEÇA OK", rotor: "PEÇA OK", ct: "RECONDICIONAR" },
             "Padrão 2A": { eixo: "RECONDICIONAR", rotor: "PEÇA OK", ct: "PEÇA OK" },
-            "Padrão 3":  { eixo: "PEÇA OK", rotor: "TROCAR", ct: "PEÇA OK" },
-            "Padrão 4":  { eixo: "PEÇA OK", rotor: "TROCAR", ct: "TROCAR" },
-            "Padrão 4A": { eixo: "RECONDICIONAR", rotor: "TROCAR", ct: "TROCAR" },
-            "Padrão 5":  { eixo: "TROCAR", rotor: "PEÇA OK", ct: "PEÇA OK" },
-            "Padrão 6":  { eixo: "TROCAR", rotor: "TROCAR", ct: "PEÇA OK" },
-            "Padrão 7":  { eixo: "TROCAR", rotor: "PEÇA OK", ct: "TROCAR" },
-            "Padrão 8":  { eixo: "TROCAR", rotor: "TROCAR", ct: "TROCAR" }
+            "Padrão 3":  { eixo: "PEÇA OK", rotor: "RECONDICIONAR", ct: "PEÇA OK" },
+            "Padrão 4":  { eixo: "PEÇA OK", rotor: "RECONDICIONAR", ct: "RECONDICIONAR" },
+            "Padrão 4A": { eixo: "RECONDICIONAR", rotor: "RECONDICIONAR", ct: "RECONDICIONAR" },
+            "Padrão 5":  { eixo: "RECONDICIONAR", rotor: "PEÇA OK", ct: "PEÇA OK" },
+            "Padrão 6":  { eixo: "RECONDICIONAR", rotor: "RECONDICIONAR", ct: "PEÇA OK" },
+            "Padrão 7":  { eixo: "RECONDICIONAR", rotor: "PEÇA OK", ct: "RECONDICIONAR" },
+            "Padrão 8":  { eixo: "RECONDICIONAR", rotor: "RECONDICIONAR", ct: "RECONDICIONAR" }
         };
 
         const MAINTENANCE_MAP = {
@@ -561,24 +561,25 @@
         // Aplica cores dinamicamente aos dropdowns de status (CORRIGIDO PARA TROCAR/TROCAR PEÇA)
         function updateStatusSelectStyle(event) {
             const select = event.target || event;
-            if (!select.classList) return;
+            if (!select || !select.classList) return;
 
-            select.classList.remove('bg-slate-200', 'bg-green-500', 'bg-red-600', 'bg-yellow-500', 'text-white', 'text-gray-800', 'bg-white');
+            select.classList.remove('bg-slate-400', 'bg-green-500', 'bg-red-600', 'bg-yellow-500', 'text-white', 'text-gray-800', 'bg-white', 'opacity-50');
             
             const value = select.value;
-            let bgColor = 'bg-slate-200';
-            let textColor = 'text-gray-800';
+            let bgColor = 'bg-slate-400'; 
+            let textColor = 'text-white';
 
-            if (value.includes('OK')) {
+            if (value === 'PEÇA OK') {
                 bgColor = 'bg-green-500';
-                textColor = 'text-white';
-            } else if (value.includes('TROCAR')) { 
-                bgColor = 'bg-red-600';
-                textColor = 'text-white';
-            } else if (value.includes('RECONDICIONAR')) {
+            } else if (value === 'RECONDICIONAR') {
                 bgColor = 'bg-yellow-500';
-                textColor = 'text-white';
-            } 
+            } else if (value === 'TROCAR') {
+                bgColor = 'bg-red-600';
+            } else if (value === 'NÃO RECEBIDO') {
+                bgColor = 'bg-slate-200';
+                textColor = 'text-gray-400';
+                select.classList.add('opacity-50');
+            }
 
             select.classList.add(bgColor, textColor);
         }
@@ -620,13 +621,15 @@ function populateForm(order) {
             };
 
             Object.entries(mapping).forEach(([key, fields]) => {
-                const hasItem = extras && extras[key] === true;
+                const itemData = extras ? extras[key] : null;
+                const hasItem = itemData === true || (itemData && itemData.came === true);
+                
                 const checkEl = document.getElementById(fields.check);
                 const statusEl = document.getElementById(fields.status);
 
                 if (checkEl && statusEl) {
                     checkEl.checked = hasItem;
-                    checkEl.disabled = true; // O técnico não pode mudar o que veio/não veio aqui, só o Pré-Vendas
+                    checkEl.disabled = true;
                     
                     if (hasItem) {
                         statusEl.disabled = false;
@@ -636,7 +639,7 @@ function populateForm(order) {
                         statusEl.disabled = true;
                         statusEl.parentElement.classList.add('opacity-40', 'bg-gray-100');
                     }
-                    updateStatusSelectStyle({ target: statusEl });
+                    updateStatusSelectStyle(statusEl);
                 }
             });
 
@@ -920,7 +923,6 @@ function populateForm(order) {
 // 1. Renderiza o formulário padrão
             renderAnalysisForm();
 
-            // 2. Inteligência de Padrões (Preenchimento Automático Corrigido)
             document.getElementById('pattern-select').addEventListener('change', function(e) {
                 const padrao = e.target.value;
                 const dados = PADROES_LOGICA[padrao];
@@ -929,7 +931,7 @@ function populateForm(order) {
                     const mapeamento = {
                         'status-eixo_rotor': dados.eixo,
                         'status-rotor_compressor': dados.rotor,
-                        'status-carcaça_compressora': dados.ct
+                        'status-trincas_(parede)': dados.ct 
                     };
 
                     Object.entries(mapeamento).forEach(([id, valor]) => {
@@ -942,10 +944,7 @@ function populateForm(order) {
                 }
             });
 
-            // 3. Filtro Anti-'A' nos itens (exceto padrões)
-            document.querySelectorAll('.status-select option').forEach(opt => {
-                if (opt.value.includes('A') && !opt.parentElement.id.includes('pattern')) opt.remove();
-            });
+            // Filtro removido para permitir a palavra RECONDICIONAR
             
             // Adiciona listeners para mudança de cor nos selects de status (Todos os selects da página)
             document.querySelectorAll('.status-select').forEach(select => {
