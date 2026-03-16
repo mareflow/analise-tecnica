@@ -74,17 +74,15 @@
         
         <!-- Coluna 1: Fila de Trabalho (25%) -->
         <div class="w-1/4 max-w-xs bg-white rounded-lg shadow p-4 flex flex-col space-y-4 overflow-y-auto">
-            <h2 class="text-xl font-semibold text-gray-800 mb-2">Aguardando Análise</h2>
-
-            <!-- Filtros/Abas da Fila -->
-            <div class="flex space-x-2 text-xs font-medium">
-                <button class="flex-1 bg-brand-blue text-white py-1 px-2 rounded-md">
-                    Fila de Análise (<span id="fila-count">0</span>)
-                </button>
-                <button class="flex-1 bg-slate-200 text-gray-600 py-1 px-2 rounded-md">
-                    Standby / Aguardando Casco (3)
-                </button>
-            </div>
+<h2 class="text-xl font-semibold text-gray-800 mb-2 border-b pb-2">Controle de Fila</h2>
+<div class="flex space-x-1 text-[10px] font-bold mb-4">
+    <button id="tab-fila-btn" class="flex-1 py-2 rounded-t-lg border-b-2 border-brand-blue text-brand-blue bg-blue-50">
+        FILA DE ANÁLISE (<span id="count-fila">0</span>)
+    </button>
+    <button id="tab-standby-btn" class="flex-1 py-2 rounded-t-lg border-b-2 border-transparent text-gray-500 hover:bg-slate-50">
+        STANDBY / CASCO (<span id="count-standby">0</span>)
+    </button>
+</div>
             
             <!-- Fila de OSs (Renderizada pelo JS) -->
             <div id="fila-de-analise-container" class="space-y-3">
@@ -353,7 +351,18 @@
             </div>
         </div>
     </div>
-    <!-- MODAIS - FIM -->
+    <!-- MODAL RAIO-X -->
+    <div id="raiox-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-[110]">
+        <div class="bg-white w-full max-w-2xl rounded-xl shadow-2xl p-6">
+            <div class="flex justify-between items-center border-b pb-4 mb-4">
+                <h3 class="text-xl font-bold text-gray-800">Raio-X da Ordem de Serviço</h3>
+                <button onclick="document.getElementById('raiox-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            <div id="raiox-content" class="grid grid-cols-2 gap-4 text-sm">
+                <!-- Conteúdo injetado via JS -->
+            </div>
+        </div>
+    </div>
 
 
     <!-- Inclusão da biblioteca do Supabase via CDN -->
@@ -455,17 +464,30 @@
         }
         
         function renderOrderCard(order) {
+            const isStandby = order.status === 'Standby / Aguardando Casco';
             const urgencyText = order.urgency || 'Normal';
             const urgencyClass = getUrgencyBadge(urgencyText);
             
+            let actionButtons = '';
+            if (isStandby) {
+                actionButtons = `
+                    <div class="flex space-x-2 mt-3 pt-2 border-t">
+                        <button onclick="event.stopPropagation(); liberarCasco('${order.id}')" class="flex-1 bg-green-600 text-white text-[9px] font-bold py-1.5 rounded hover:bg-green-700">RECEBER CASCO</button>
+                        <button onclick="event.stopPropagation(); alert('Pagamento registrado!')" class="flex-1 bg-blue-600 text-white text-[9px] font-bold py-1.5 rounded hover:bg-blue-700">PAGOU CASCO</button>
+                    </div>
+                `;
+            }
+
             return `
                 <div class="os-card bg-white p-3 rounded-lg shadow border border-gray-200" data-order-id="${order.id}">
-                    <p class="text-base font-bold text-gray-800 mb-1 flex justify-between items-center">${order.business_id}
-                        <span class="inline-block text-xs font-medium ${urgencyClass} px-2 py-0.5 rounded-full">${urgencyText}</span>
-                    </p>
-                    <p class="text-sm text-gray-600">${order.model}</p>
-                    <p class="text-xs text-gray-500">${order.client}</p>
-                    <p class="text-xs text-gray-500 mt-1">${formatDateTime(order.entry_date)}</p>
+                    <div onclick="abrirRaioX('${order.id}')">
+                        <p class="text-base font-bold text-gray-800 mb-1 flex justify-between items-center">${order.business_id}
+                            <span class="inline-block text-xs font-medium ${urgencyClass} px-2 py-0.5 rounded-full">${urgencyText}</span>
+                        </p>
+                        <p class="text-sm text-gray-600">${order.model}</p>
+                        <p class="text-xs text-gray-500">${order.client}</p>
+                    </div>
+                    ${actionButtons}
                 </div>
             `;
         }
@@ -616,9 +638,7 @@
 
                 filaCountSpan.textContent = currentOrders.length;
                 
-                currentOrders.forEach(orderToRender => {
-                    filaContainer.insertAdjacentHTML('beforeend', renderOrderCard(orderToRender));
-                });
+                updateSidebarUI();
                 
                 addCardClickListeners();
 
@@ -882,7 +902,57 @@
 
                 await loadAnalysisOrders();
             })();
-        });
-    </script>
+        let activeTab = 'fila';
+
+        // Lógica de Alternar Abas
+        document.getElementById('tab-fila-btn').onclick = () => {
+            activeTab = 'fila';
+            document.getElementById('tab-fila-btn').className = 'flex-1 py-2 rounded-t-lg border-b-2 border-brand-blue text-brand-blue bg-blue-50';
+            document.getElementById('tab-standby-btn').className = 'flex-1 py-2 rounded-t-lg border-b-2 border-transparent text-gray-500 hover:bg-slate-50';
+            updateSidebarUI();
+        };
+
+        document.getElementById('tab-standby-btn').onclick = () => {
+            activeTab = 'standby';
+            document.getElementById('tab-standby-btn').className = 'flex-1 py-2 rounded-t-lg border-b-2 border-brand-blue text-brand-blue bg-blue-50';
+            document.getElementById('tab-fila-btn').className = 'flex-1 py-2 rounded-t-lg border-b-2 border-transparent text-gray-500 hover:bg-slate-50';
+            updateSidebarUI();
+        };
+
+        function updateSidebarUI() {
+            const fila = currentOrders.filter(o => o.status !== 'Standby / Aguardando Casco');
+            const standby = currentOrders.filter(o => o.status === 'Standby / Aguardando Casco');
+            
+            document.getElementById('count-fila').innerText = fila.length;
+            document.getElementById('count-standby').innerText = standby.length;
+
+            const targetList = activeTab === 'fila' ? fila : standby;
+            filaContainer.innerHTML = targetList.length ? targetList.map(o => renderOrderCard(o)).join('') : '<p class="text-gray-500 text-center mt-4">Vazio.</p>';
+        }
+
+        function abrirRaioX(id) {
+            const os = currentOrders.find(o => o.id === id);
+            document.getElementById('raiox-content').innerHTML = `
+                <div><p class="text-gray-500">Cliente</p><p class="font-bold">${os.client}</p></div>
+                <div><p class="text-gray-500">Modelo</p><p class="font-bold">${os.model}</p></div>
+                <div><p class="text-gray-500">Status</p><p class="font-bold text-blue-600">${os.status}</p></div>
+                <div><p class="text-gray-500">Part Number</p><p class="font-bold text-red-600">${os.part_number || 'Não informado'}</p></div>
+                <div class="col-span-2 border-t pt-2"><p class="text-gray-500">Observações de Entrada:</p><p class="italic">"${os.observation || 'Sem observações'}"</p></div>
+            `;
+            document.getElementById('raiox-modal').classList.remove('hidden');
+            document.getElementById('raiox-modal').classList.add('flex');
+        }
+
+        async function liberarCasco(id) {
+            if(!confirm("Mudar status para Aguardando Análise?")) return;
+            await fetch('https://teste.mareflow.com.br/webhook/orders/update-status', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ os_id: id, status: 'Aguardando Análise Técnica' })
+            });
+            loadAnalysisOrders(); 
+        }
+    });
+</script>
 </body>
 </html>
