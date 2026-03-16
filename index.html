@@ -965,48 +965,65 @@ function abrirRaioX(id) {
             const os = currentOrders.find(o => o.id === id);
             if (!os) return;
 
-            // Tratamento amigável para o JSONB de itens adicionais
+            // 1. Tratamento para o JSONB de itens adicionais
             let extrasHtml = "";
             if (os.maintenance_extras) {
                 const extras = typeof os.maintenance_extras === 'string' ? JSON.parse(os.maintenance_extras) : os.maintenance_extras;
                 const labels = { actuator: "Atuador", geometry: "Geometria", geometryStem: "Canote", geometryFlange: "Flange" };
                 extrasHtml = Object.entries(extras)
                     .filter(([_, value]) => value === true || (value && value.came === true))
-                    .map(([key, _]) => `<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-[10px] font-bold uppercase">${labels[key] || key}</span>`)
+                    .map(([key, _]) => `<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-[10px] font-black uppercase border border-blue-200">${labels[key] || key}</span>`)
                     .join(' ');
             }
 
+            // 2. Montagem do HTML principal + Linha do Tempo (Cronologia)
             document.getElementById('raiox-content').innerHTML = `
                 <div class="col-span-2 bg-slate-50 p-4 rounded-xl border border-slate-200 mb-2">
-                    <p class="text-slate-400 text-[9px] font-black uppercase tracking-widest mb-1">Identificação</p>
+                    <p class="text-slate-400 text-[9px] font-black uppercase tracking-widest mb-1 italic">Identificação da Ordem</p>
                     <div class="grid grid-cols-2 gap-4">
-                        <div><p class="text-gray-500 text-[10px]">Cliente</p><p class="font-bold text-slate-800">${os.client}</p></div>
-                        <div><p class="text-gray-500 text-[10px]">Modelo</p><p class="font-bold text-slate-800">${os.model}</p></div>
+                        <div><p class="text-gray-500 text-[10px] font-bold uppercase">Cliente</p><p class="font-black text-slate-800 uppercase tracking-tight">${os.client}</p></div>
+                        <div><p class="text-gray-500 text-[10px] font-bold uppercase">Modelo</p><p class="font-black text-slate-800 uppercase tracking-tight">${os.model}</p></div>
                     </div>
                 </div>
                 
                 <div class="bg-amber-50 p-4 rounded-xl border border-amber-200">
-                    <p class="text-amber-600 text-[9px] font-black uppercase tracking-widest mb-1">Logística de Troca</p>
-                    <p class="text-gray-500 text-[10px]">Tipo de Venda</p>
-                    <p class="font-black text-amber-700 uppercase">${os.trade_in_option || 'Venda Comum'}</p>
+                    <p class="text-amber-600 text-[9px] font-black uppercase tracking-widest mb-1 italic">Logística de Troca</p>
+                    <p class="text-gray-500 text-[10px] font-bold uppercase">Tipo de Venda</p>
+                    <p class="font-black text-amber-700 uppercase italic">${os.trade_in_option || 'Venda Comum'}</p>
                 </div>
 
                 <div class="bg-blue-50 p-4 rounded-xl border border-blue-200">
-                    <p class="text-blue-600 text-[9px] font-black uppercase tracking-widest mb-1">Dados Técnicos</p>
-                    <p class="text-gray-500 text-[10px]">Part Number</p>
-                    <p class="font-mono font-bold text-blue-700">${os.part_number || '---'}</p>
+                    <p class="text-blue-600 text-[9px] font-black uppercase tracking-widest mb-1 italic">Dados Técnicos</p>
+                    <p class="text-gray-500 text-[10px] font-bold uppercase">Part Number</p>
+                    <p class="font-mono font-black text-blue-700 text-lg">${os.part_number || '---'}</p>
                 </div>
 
                 <div class="col-span-2 p-4">
-                    <p class="text-slate-400 text-[9px] font-black uppercase tracking-widest mb-2">Itens Adicionais Identificados:</p>
+                    <p class="text-slate-400 text-[9px] font-black uppercase tracking-widest mb-3 italic">Itens Adicionais Identificados:</p>
                     <div class="flex flex-wrap gap-2">
-                        ${extrasHtml || '<span class="text-slate-400 italic text-xs">Nenhum item adicional.</span>'}
+                        ${extrasHtml || '<span class="text-slate-400 italic text-[10px] uppercase font-bold">Nenhum item adicional detectado.</span>'}
                     </div>
                 </div>
 
-                <div class="col-span-2 border-t pt-4 px-4">
-                    <p class="text-slate-400 text-[9px] font-black uppercase tracking-widest mb-1">Observações de Entrada:</p>
-                    <p class="italic text-slate-700 text-xs bg-slate-50 p-3 rounded-lg border leading-relaxed">"${os.observation || 'Sem observações registradas.'}"</p>
+                <div class="col-span-2 border-t border-slate-100 pt-4 px-4">
+                    <p class="text-slate-400 text-[9px] font-black uppercase tracking-widest mb-1 italic">Observações de Entrada:</p>
+                    <p class="italic text-slate-700 text-xs bg-slate-50 p-3 rounded-lg border leading-relaxed">"${os.observation || 'Nenhuma observação registrada na entrada.'}"</p>
+                </div>
+
+                <!-- CRONOLOGIA DE PROCESSO (TIMELINE) -->
+                <div class="col-span-2 border-t border-slate-100 pt-6 px-4 mt-2">
+                    <p class="text-slate-400 text-[9px] font-black uppercase tracking-widest mb-4 text-center italic">Linha do Tempo de Produção</p>
+                    <div class="space-y-4 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
+                        <div class="flex items-center relative pl-8">
+                            <div class="absolute left-0 w-6 h-6 bg-blue-100 rounded-full border-4 border-white flex items-center justify-center">
+                                <div class="w-2 h-2 bg-blue-600 rounded-full"></div>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-black text-slate-800 uppercase tracking-tighter">Entrada no Sistema (Pré-Vendas)</p>
+                                <p class="text-[9px] text-slate-500 font-bold italic">${formatDateTime(os.created_at)}</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             `;
             document.getElementById('raiox-modal').classList.remove('hidden');
