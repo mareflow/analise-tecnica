@@ -819,9 +819,13 @@
         }
         
         document.addEventListener('DOMContentLoaded', () => {
-            // Mapeamento dos elementos DOM
+            // Mapeamento dos elementos DOM - IDs corrigidos para bater com o HTML
             filaContainer = document.getElementById('fila-de-analise-container');
-            filaCountSpan = document.getElementById('fila-count');
+            filaCountSpan = document.getElementById('count-fila'); // ID correto do seu HTML
+            
+            // Adicione esta linha para mapear o contador de standby também
+            const standbyCountSpan = document.getElementById('count-standby'); 
+            
             loadingMessage = document.getElementById('loading-message');
             
             const formElement = document.getElementById('analysis-form');
