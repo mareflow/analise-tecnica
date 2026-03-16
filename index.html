@@ -906,42 +906,51 @@
 
                 await loadAnalysisOrders();
             })();
+        }); // <--- FIM DO DOMCONTENTLOADED (FECHADO CORRETAMENTE)
+
         let activeTab = 'fila';
 
-        // Lógica de Alternar Abas
-        document.getElementById('tab-fila-btn').onclick = () => {
-            activeTab = 'fila';
-            document.getElementById('tab-fila-btn').className = 'flex-1 py-2 rounded-t-lg border-b-2 border-brand-blue text-brand-blue bg-blue-50';
-            document.getElementById('tab-standby-btn').className = 'flex-1 py-2 rounded-t-lg border-b-2 border-transparent text-gray-500 hover:bg-slate-50';
-            updateSidebarUI();
-        };
-
-        document.getElementById('tab-standby-btn').onclick = () => {
-            activeTab = 'standby';
-            document.getElementById('tab-standby-btn').className = 'flex-1 py-2 rounded-t-lg border-b-2 border-brand-blue text-brand-blue bg-blue-50';
-            document.getElementById('tab-fila-btn').className = 'flex-1 py-2 rounded-t-lg border-b-2 border-transparent text-gray-500 hover:bg-slate-50';
-            updateSidebarUI();
-        };
+        // Lógica de Alternar Abas (Usando delegação para garantir o clique)
+        document.addEventListener('click', (e) => {
+            if (e.target.id === 'tab-fila-btn' || e.target.closest('#tab-fila-btn')) {
+                activeTab = 'fila';
+                document.getElementById('tab-fila-btn').className = 'flex-1 py-2 rounded-t-lg border-b-2 border-brand-blue text-brand-blue bg-blue-50';
+                document.getElementById('tab-standby-btn').className = 'flex-1 py-2 rounded-t-lg border-b-2 border-transparent text-gray-500 hover:bg-slate-50';
+                updateSidebarUI();
+            }
+            if (e.target.id === 'tab-standby-btn' || e.target.closest('#tab-standby-btn')) {
+                activeTab = 'standby';
+                document.getElementById('tab-standby-btn').className = 'flex-1 py-2 rounded-t-lg border-b-2 border-brand-blue text-brand-blue bg-blue-50';
+                document.getElementById('tab-fila-btn').className = 'flex-1 py-2 rounded-t-lg border-b-2 border-transparent text-gray-500 hover:bg-slate-50';
+                updateSidebarUI();
+            }
+        });
 
         function updateSidebarUI() {
             const fila = currentOrders.filter(o => o.status !== 'Standby / Aguardando Casco');
             const standby = currentOrders.filter(o => o.status === 'Standby / Aguardando Casco');
             
-            document.getElementById('count-fila').innerText = fila.length;
-            document.getElementById('count-standby').innerText = standby.length;
+            // Blindagem: só tenta escrever se os elementos existirem
+            const cf = document.getElementById('count-fila');
+            const cs = document.getElementById('count-standby');
+            if (cf) cf.innerText = fila.length;
+            if (cs) cs.innerText = standby.length;
 
             const targetList = activeTab === 'fila' ? fila : standby;
-            filaContainer.innerHTML = targetList.length ? targetList.map(o => renderOrderCard(o)).join('') : '<p class="text-gray-500 text-center mt-4">Vazio.</p>';
+            if (filaContainer) {
+                filaContainer.innerHTML = targetList.length ? targetList.map(o => renderOrderCard(o)).join('') : '<p class="text-gray-500 text-center mt-4 uppercase font-black text-[10px]">Nenhuma ordem pendente.</p>';
+            }
         }
 
         function abrirRaioX(id) {
             const os = currentOrders.find(o => o.id === id);
+            if (!os) return;
             document.getElementById('raiox-content').innerHTML = `
-                <div><p class="text-gray-500">Cliente</p><p class="font-bold">${os.client}</p></div>
-                <div><p class="text-gray-500">Modelo</p><p class="font-bold">${os.model}</p></div>
-                <div><p class="text-gray-500">Status</p><p class="font-bold text-blue-600">${os.status}</p></div>
-                <div><p class="text-gray-500">Part Number</p><p class="font-bold text-red-600">${os.part_number || 'Não informado'}</p></div>
-                <div class="col-span-2 border-t pt-2"><p class="text-gray-500">Observações de Entrada:</p><p class="italic">"${os.observation || 'Sem observações'}"</p></div>
+                <div><p class="text-gray-500 uppercase text-[10px] font-black">Cliente</p><p class="font-bold">${os.client}</p></div>
+                <div><p class="text-gray-500 uppercase text-[10px] font-black">Modelo</p><p class="font-bold">${os.model}</p></div>
+                <div><p class="text-gray-500 uppercase text-[10px] font-black">Status</p><p class="font-bold text-blue-600">${os.status}</p></div>
+                <div><p class="text-gray-500 uppercase text-[10px] font-black">Part Number</p><p class="font-bold text-red-600">${os.part_number || '---'}</p></div>
+                <div class="col-span-2 border-t pt-2"><p class="text-gray-500 uppercase text-[10px] font-black">Obs. de Entrada:</p><p class="italic text-xs">"${os.observation || 'Sem observações'}"</p></div>
             `;
             document.getElementById('raiox-modal').classList.remove('hidden');
             document.getElementById('raiox-modal').classList.add('flex');
@@ -949,14 +958,15 @@
 
         async function liberarCasco(id) {
             if(!confirm("Mudar status para Aguardando Análise?")) return;
-            await fetch('https://teste.mareflow.com.br/webhook/orders/update-status', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ os_id: id, status: 'Aguardando Análise Técnica' })
-            });
-            loadAnalysisOrders(); 
+            try {
+                await fetch('https://teste.mareflow.com.br/webhook/orders/update-status', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ os_id: id, status: 'Aguardando Análise Técnica' })
+                });
+                loadAnalysisOrders(); 
+            } catch (err) { alert("Erro ao liberar casco no servidor."); }
         }
-    });
 </script>
 </body>
 </html>
