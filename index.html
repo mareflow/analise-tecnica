@@ -479,11 +479,12 @@
             }
 
             // UNÍSSONO: O card agora carrega o status para o listener decidir se abre Form ou Raio-X
+// UNÍSSONO: Removido o 'onclick' fixo para o JavaScript decidir o que abrir
             return `
                 <div class="os-card bg-white p-3 rounded-lg shadow border border-gray-200 cursor-pointer" 
                      data-order-id="${order.id}" 
                      data-status="${order.status}">
-                    <div>
+                    <div class="pointer-events-none">
                         <p class="text-base font-bold text-gray-800 mb-1 flex justify-between items-center">${order.business_id}
                             <span class="inline-block text-xs font-medium ${urgencyClass} px-2 py-0.5 rounded-full">${urgencyText}</span>
                         </p>
@@ -580,6 +581,10 @@
 
         // Preenche o formulário ao selecionar uma OS
         function populateForm(order) {
+            // UNÍSSONO: Garante que qualquer modal aberto seja fechado ao carregar o formulário técnico
+            const modal = document.getElementById('raiox-modal');
+            if(modal) modal.classList.add('hidden');
+            
             activeOSId = order.id;
             document.getElementById('initial-placeholder').classList.add('hidden');
             document.getElementById('analysis-form-wrapper').classList.remove('hidden');
