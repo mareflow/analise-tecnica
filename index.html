@@ -395,8 +395,8 @@
         let activeOSId = null;
 
         // Dados estáticos para o formulário
-        const STATUS_OPTIONS_EXTERNAL = ['Não Informado', 'PEÇA OK', 'RECONDICIONAR', 'TROCAR'];
-        const STATUS_OPTIONS_CARACOL = ['PEÇA OK', 'RECONDICIONAR', 'TROCAR']; 
+// UNÍSSONO: Status Oficiais TurboSul (Uppercase)
+        const STATUS_OPTIONS = ['NÃO INFORMADO', 'PEÇA OK', 'RECONDICIONAR', 'TROCAR'];
 
         const ANALYSIS_ITEMS = {
             tab1: ['Abraçadeiras', 'Mangueiras', 'Flanges', 'Canos', 'Calços', 'Coletor', 'Prisioneiros'],
@@ -404,17 +404,18 @@
             tab3: ['Trincas (Parede)', 'Roscas / Prisioneiros', 'Assento da Válvula', 'Faceamento']
         };
 
+        // Lógica de Padrões: Se não está OK, prioriza RECONDICIONAR em vez de trocar
         const PADROES_LOGICA = {
-            "Padrão 1":  { eixo: "BOM / OK", rotor: "BOM / OK", ct: "BOM / OK" },
-            "Padrão 2":  { eixo: "BOM / OK", rotor: "BOM / OK", ct: "TROCAR PEÇA" },
-            "Padrão 2A": { eixo: "RECONDICIONAR", rotor: "BOM / OK", ct: "BOM / OK" },
-            "Padrão 3":  { eixo: "BOM / OK", rotor: "TROCAR PEÇA", ct: "BOM / OK" },
-            "Padrão 4":  { eixo: "BOM / OK", rotor: "TROCAR PEÇA", ct: "TROCAR PEÇA" },
-            "Padrão 4A": { eixo: "RECONDICIONAR", rotor: "TROCAR PEÇA", ct: "TROCAR PEÇA" },
-            "Padrão 5":  { eixo: "TROCAR PEÇA", rotor: "BOM / OK", ct: "BOM / OK" },
-            "Padrão 6":  { eixo: "TROCAR PEÇA", rotor: "TROCAR PEÇA", ct: "BOM / OK" },
-            "Padrão 7":  { eixo: "TROCAR PEÇA", rotor: "BOM / OK", ct: "TROCAR PEÇA" },
-            "Padrão 8":  { eixo: "TROCAR PEÇA", rotor: "TROCAR PEÇA", ct: "TROCAR PEÇA" }
+            "Padrão 1":  { eixo: "PEÇA OK", rotor: "PEÇA OK", ct: "PEÇA OK" },
+            "Padrão 2":  { eixo: "PEÇA OK", rotor: "PEÇA OK", ct: "RECONDICIONAR" },
+            "Padrão 2A": { eixo: "RECONDICIONAR", rotor: "PEÇA OK", ct: "PEÇA OK" },
+            "Padrão 3":  { eixo: "PEÇA OK", rotor: "RECONDICIONAR", ct: "PEÇA OK" },
+            "Padrão 4":  { eixo: "PEÇA OK", rotor: "RECONDICIONAR", ct: "RECONDICIONAR" },
+            "Padrão 4A": { eixo: "RECONDICIONAR", rotor: "RECONDICIONAR", ct: "PEÇA OK" },
+            "Padrão 5":  { eixo: "RECONDICIONAR", rotor: "PEÇA OK", ct: "PEÇA OK" },
+            "Padrão 6":  { eixo: "RECONDICIONAR", rotor: "RECONDICIONAR", ct: "PEÇA OK" },
+            "Padrão 7":  { eixo: "RECONDICIONAR", rotor: "PEÇA OK", ct: "RECONDICIONAR" },
+            "Padrão 8":  { eixo: "RECONDICIONAR", rotor: "RECONDICIONAR", ct: "RECONDICIONAR" }
         };
 
         const MAINTENANCE_MAP = {
@@ -612,31 +613,33 @@ function populateForm(order) {
             // --- UNÍSSONO: Lógica dos Itens Adicionais (Atuador, Geometria, etc.) ---
             const extras = typeof order.maintenance_extras === 'string' ? JSON.parse(order.maintenance_extras) : order.maintenance_extras;
             
-            const mapping = {
-                actuator: { check: 'check-actuator', status: 'status-actuator' },
-                geometry: { check: 'check-geometry', status: 'status-geometry' },
-                geometryStem: { check: 'check-geometryStem', status: 'status-geometryStem' },
-                geometryFlange: { check: 'check-geometryFlange', status: 'status-geometryFlange' }
+const mapping = {
+                actuator: { check: 'check-actuator', status: 'status-actuator', label: 'ATUADOR' },
+                geometry: { check: 'check-geometry', status: 'status-geometry', label: 'GEOMETRIA' },
+                geometryStem: { check: 'check-geometryStem', status: 'status-geometryStem', label: 'CANOTE' },
+                geometryFlange: { check: 'check-geometryFlange', status: 'status-geometryFlange', label: 'FLANGE' }
             };
 
             Object.entries(mapping).forEach(([key, fields]) => {
-                const hasItem = extras && extras[key] === true;
+                const extraData = extras ? extras[key] : null;
+                const hasItem = extraData === true || (extraData && extraData.came === true);
+                
                 const checkEl = document.getElementById(fields.check);
                 const statusEl = document.getElementById(fields.status);
 
-                if (checkEl && statusEl) {
-                    checkEl.checked = hasItem;
-                    checkEl.disabled = true; // O técnico não pode mudar o que veio/não veio aqui, só o Pré-Vendas
-                    
+                if (statusEl) {
                     if (hasItem) {
                         statusEl.disabled = false;
-                        statusEl.parentElement.classList.remove('opacity-40', 'bg-gray-100');
+                        statusEl.classList.remove('opacity-30');
+                        if (checkEl) checkEl.checked = true;
                     } else {
+                        statusEl.innerHTML = `<option value="NÃO RECEBIDO">NÃO RECEBIDO</option>`;
                         statusEl.value = "NÃO RECEBIDO";
                         statusEl.disabled = true;
-                        statusEl.parentElement.classList.add('opacity-40', 'bg-gray-100');
+                        statusEl.classList.add('opacity-30');
+                        if (checkEl) checkEl.checked = false;
                     }
-                    updateStatusSelectStyle({ target: statusEl });
+                    updateStatusSelectStyle(statusEl);
                 }
             });
 
@@ -963,10 +966,15 @@ function populateForm(order) {
                 }
             });
 
-            // 3. Filtro Anti-'A' nos itens (exceto padrões)
-            document.querySelectorAll('.status-select option').forEach(opt => {
-                if (opt.value.includes('A') && !opt.parentElement.id.includes('pattern')) opt.remove();
-            });
+            // 3. UNÍSSONO: Estilização de Cores TurboSul
+            window.updateStatusSelectStyle = function(el) {
+                el.classList.remove('bg-slate-200', 'bg-green-500', 'bg-yellow-500', 'bg-red-600', 'text-white', 'text-gray-800');
+                const val = el.value.toUpperCase();
+                if (val === 'PEÇA OK') el.classList.add('bg-green-500', 'text-white');
+                else if (val === 'RECONDICIONAR') el.classList.add('bg-yellow-500', 'text-white');
+                else if (val === 'TROCAR') el.classList.add('bg-red-600', 'text-white');
+                else el.classList.add('bg-slate-200', 'text-gray-800');
+            };
             
             // Adiciona listeners para mudança de cor nos selects de status (Todos os selects da página)
             document.querySelectorAll('.status-select').forEach(select => {
@@ -1141,27 +1149,83 @@ function abrirRaioX(id) {
         }
 
         // FUNÇÃO PARA RECEBER CASCO E VOLTAR PARA A FILA DE ANÁLISE
+// 1. INTELIGÊNCIA DE PADRÕES (Preenchimento Automático)
+        document.getElementById('pattern-select').addEventListener('change', function(e) {
+            const padrao = e.target.value;
+            const dados = PADROES_LOGICA[padrao];
+            
+            if (dados) {
+                // Mapeamento de IDs gerados dinamicamente pela função createFormRow
+                const mapeamento = {
+                    'status-eixo_rotor': dados.eixo,
+                    'status-rotor_compressor': dados.rotor,
+                    'status-carcaça_compressor': dados.ct
+                };
+
+                Object.entries(mapeamento).forEach(([id, valor]) => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.value = valor;
+                        // UNÍSSONO: Atualiza a cor (Verde/Amarelo/Vermelho) na hora
+                        updateStatusSelectStyle({ target: el });
+                    }
+                });
+            }
+        });
+
+        // 2. FUNÇÃO DE GERAÇÃO DE RELATÓRIO EXCEL
+        function gerarRelatorioExcel(payload) {
+            const osData = currentOrders.find(o => o.id === activeOSId);
+            if (!osData) return;
+
+            const wb = XLSX.utils.book_new();
+            
+            const data = [
+                ["RELATÓRIO DE ANÁLISE TÉCNICA - TURBOSUL"],
+                [""],
+                ["DADOS DA OS"],
+                ["Orçamento", osData.business_id],
+                ["Cliente", osData.client],
+                ["Modelo", osData.model],
+                ["Part Number", osData.part_number || '---'],
+                ["Padrão Selecionado", payload.pattern || '---'],
+                [""],
+                ["VEREDITO DOS COMPONENTES"],
+                ["Componente", "Status/Veredito", "Observações"]
+            ];
+
+            // Nomes amigáveis para a Planilha de Serviços
+            const mapeamentoNomes = {
+                'Carcaça Compressor': 'CCO',
+                'Carcaça Central': 'CT',
+                'Coletor': 'COLETOR',
+                'Eixo Rotor': 'EIXO',
+                'Rotor Compressor': 'ROTOR'
+            };
+
+            const todosItens = [...payload.attachments, ...payload.general_repairs, ...payload.snail_checklist];
+            todosItens.forEach(p => {
+                const nomeFinal = mapeamentoNomes[p.name] || p.name;
+                data.push([nomeFinal, p.status, p.obs]);
+            });
+
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            XLSX.utils.book_append_sheet(wb, ws, "Análise");
+            XLSX.writeFile(wb, `Analise_${osData.business_id}.xlsx`);
+        }
+
         async function liberarCasco(id) {
             if(!confirm("Confirmar recebimento do casco? A OS voltará para a fila de produção.")) return;
-            
             try {
-                const response = await fetch('https://teste.mareflow.com.br/webhook/orders/update-status', {
+                await fetch('https://teste.mareflow.com.br/webhook/orders/update-status', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ os_id: id, status: 'Aguardando Análise Técnica' })
                 });
-
-                if (response.ok) {
-                    alert("Casco recebido com sucesso!");
-                    await loadAnalysisOrders(); // UNÍSSONO: Recarrega a sidebar e zera o Standby
-                } else {
-                    alert("Erro ao atualizar status no servidor.");
-                }
-            } catch (err) {
-                console.error("Erro técnico:", err);
-                alert("Falha de conexão com o sistema.");
-            }
+                loadAnalysisOrders(); 
+            } catch (err) { console.error("Erro:", err); }
         }
+    }); // Fim do DOMContentLoaded
 </script>
 </body>
 </html>
