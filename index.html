@@ -134,54 +134,58 @@
                                     <option value="Padrão 8">Padrão 8</option>
                                 </select>
                             </div>
-                            <!-- Itens Adicionais Check/Status - CLASSES DE COR INICIAIS REMOVIDAS -->
+                            <!-- Itens Adicionais Check/Status Corrigidos -->
                             <div class="col-span-3 grid grid-cols-4 gap-4">
                                 <!-- ATUADOR -->
-                                <div class="space-y-1 p-2 border rounded-lg bg-white">
+                                <div class="space-y-1 p-2 border rounded-lg bg-white transition-all duration-200">
                                     <p class="text-xs font-medium text-gray-700">ATUADOR</p>
                                     <div class="flex items-center space-x-2">
                                         <input type="checkbox" id="check-actuator" class="h-4 w-4 text-brand-blue border-gray-300 rounded">
                                         <label for="check-actuator" class="text-sm">Veio?</label>
                                     </div>
-                                    <select id="status-actuator" class="w-full px-2 py-1 text-xs border rounded-lg">
+                                    <select id="status-actuator" onchange="updateStatusSelectStyle(this)" class="w-full px-2 py-1 text-xs border rounded-lg font-bold">
                                         <option value="BOM / OK">BOM / OK</option>
                                         <option value="TROCAR PEÇA">TROCAR PEÇA</option>
+                                        <option value="NÃO RECEBIDO">NÃO RECEBIDO</option>
                                     </select>
                                 </div>
                                 <!-- GEOMETRIA VARIÁVEL -->
-                                <div class="space-y-1 p-2 border rounded-lg bg-white">
+                                <div class="space-y-1 p-2 border rounded-lg bg-white transition-all duration-200">
                                     <p class="text-xs font-medium text-gray-700">GEOMETRIA VARIÁVEL</p>
                                     <div class="flex items-center space-x-2">
                                         <input type="checkbox" id="check-geometry" class="h-4 w-4 text-brand-blue border-gray-300 rounded">
                                         <label for="check-geometry" class="text-sm">Veio?</label>
                                     </div>
-                                    <select id="status-geometry" class="w-full px-2 py-1 text-xs border rounded-lg">
+                                    <select id="status-geometry" onchange="updateStatusSelectStyle(this)" class="w-full px-2 py-1 text-xs border rounded-lg font-bold">
                                         <option value="BOM / OK">BOM / OK</option>
                                         <option value="TROCAR PEÇA">TROCAR PEÇA</option>
+                                        <option value="NÃO RECEBIDO">NÃO RECEBIDO</option>
                                     </select>
                                 </div>
                                 <!-- CANOTE DA GEOMETRIA -->
-                                <div class="space-y-1 p-2 border rounded-lg bg-white">
+                                <div class="space-y-1 p-2 border rounded-lg bg-white transition-all duration-200">
                                     <p class="text-xs font-medium text-gray-700">CANOTE DA GEOMETRIA</p>
                                     <div class="flex items-center space-x-2">
                                         <input type="checkbox" id="check-geometryStem" class="h-4 w-4 text-brand-blue border-gray-300 rounded">
                                         <label for="check-geometryStem" class="text-sm">Veio?</label>
                                     </div>
-                                    <select id="status-geometryStem" class="w-full px-2 py-1 text-xs border rounded-lg">
+                                    <select id="status-geometryStem" onchange="updateStatusSelectStyle(this)" class="w-full px-2 py-1 text-xs border rounded-lg font-bold">
                                         <option value="BOM / OK">BOM / OK</option>
                                         <option value="TROCAR PEÇA">TROCAR PEÇA</option>
+                                        <option value="NÃO RECEBIDO">NÃO RECEBIDO</option>
                                     </select>
                                 </div>
                                 <!-- FLANGE DA GEOMETRIA -->
-                                <div class="space-y-1 p-2 border rounded-lg bg-white">
+                                <div class="space-y-1 p-2 border rounded-lg bg-white transition-all duration-200">
                                     <p class="text-xs font-medium text-gray-700">FLANGE DA GEOMETRIA</p>
                                     <div class="flex items-center space-x-2">
                                         <input type="checkbox" id="check-geometryFlange" class="h-4 w-4 text-brand-blue border-gray-300 rounded">
                                         <label for="check-geometryFlange" class="text-sm">Veio?</label>
                                     </div>
-                                    <select id="status-geometryFlange" class="w-full px-2 py-1 text-xs border rounded-lg">
+                                    <select id="status-geometryFlange" onchange="updateStatusSelectStyle(this)" class="w-full px-2 py-1 text-xs border rounded-lg font-bold">
                                         <option value="BOM / OK">BOM / OK</option>
                                         <option value="TROCAR PEÇA">TROCAR PEÇA</option>
+                                        <option value="NÃO RECEBIDO">NÃO RECEBIDO</option>
                                     </select>
                                 </div>
                             </div>
@@ -559,17 +563,17 @@
             const select = event.target || event;
             if (!select || !select.classList) return;
 
-            select.classList.remove('bg-slate-400', 'bg-green-500', 'bg-red-600', 'bg-yellow-500', 'text-white', 'text-gray-800', 'bg-white', 'opacity-50');
+            select.classList.remove('bg-slate-400', 'bg-green-500', 'bg-red-600', 'bg-yellow-500', 'text-white', 'text-gray-800', 'bg-white', 'opacity-50', 'bg-slate-200');
             
             const value = select.value;
             let bgColor = 'bg-slate-400'; 
             let textColor = 'text-white';
 
-            if (value === 'PEÇA OK') {
+            if (value.includes('OK')) {
                 bgColor = 'bg-green-500';
-            } else if (value === 'RECONDICIONAR') {
+            } else if (value.includes('RECONDICIONAR')) {
                 bgColor = 'bg-yellow-500';
-            } else if (value === 'TROCAR') {
+            } else if (value.includes('TROCAR')) {
                 bgColor = 'bg-red-600';
             } else if (value === 'NÃO RECEBIDO') {
                 bgColor = 'bg-slate-200';
@@ -617,7 +621,8 @@ function populateForm(order) {
             };
 
             Object.entries(mapping).forEach(([key, fields]) => {
-                const itemData = extras ? extras[key] : null;
+                let itemData = extras ? extras[key] : null;
+                // Trata boolean direto ou objeto {came: true}
                 const hasItem = itemData === true || (itemData && itemData.came === true);
                 
                 const checkEl = document.getElementById(fields.check);
@@ -625,15 +630,18 @@ function populateForm(order) {
 
                 if (checkEl && statusEl) {
                     checkEl.checked = hasItem;
-                    checkEl.disabled = true;
+                    checkEl.disabled = true; // Trava o checkbox (Analista não muda o que o cliente trouxe)
                     
+                    const cardContainer = statusEl.closest('.border');
+
                     if (hasItem) {
                         statusEl.disabled = false;
-                        statusEl.parentElement.classList.remove('opacity-40', 'bg-gray-100');
+                        if (statusEl.value === "NÃO RECEBIDO") statusEl.value = "BOM / OK";
+                        cardContainer.classList.remove('opacity-40', 'bg-gray-100', 'grayscale');
                     } else {
                         statusEl.value = "NÃO RECEBIDO";
                         statusEl.disabled = true;
-                        statusEl.parentElement.classList.add('opacity-40', 'bg-gray-100');
+                        cardContainer.classList.add('opacity-40', 'bg-gray-100', 'grayscale');
                     }
                     updateStatusSelectStyle(statusEl);
                 }
