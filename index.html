@@ -134,7 +134,7 @@
                                     <option value="Padrão 8">Padrão 8</option>
                                 </select>
                             </div>
-                            <!-- Itens Adicionais Check/Status Corrigidos -->
+                            <!-- Itens Adicionais Check/Status Fixos -->
                             <div class="col-span-3 grid grid-cols-4 gap-4">
                                 <!-- ATUADOR -->
                                 <div class="space-y-1 p-2 border rounded-lg bg-white transition-all duration-200">
@@ -146,7 +146,6 @@
                                     <select id="status-actuator" onchange="updateStatusSelectStyle(this)" class="w-full px-2 py-1 text-xs border rounded-lg font-bold">
                                         <option value="BOM / OK">BOM / OK</option>
                                         <option value="TROCAR PEÇA">TROCAR PEÇA</option>
-                                        <option value="NÃO RECEBIDO">NÃO RECEBIDO</option>
                                     </select>
                                 </div>
                                 <!-- GEOMETRIA VARIÁVEL -->
@@ -159,7 +158,6 @@
                                     <select id="status-geometry" onchange="updateStatusSelectStyle(this)" class="w-full px-2 py-1 text-xs border rounded-lg font-bold">
                                         <option value="BOM / OK">BOM / OK</option>
                                         <option value="TROCAR PEÇA">TROCAR PEÇA</option>
-                                        <option value="NÃO RECEBIDO">NÃO RECEBIDO</option>
                                     </select>
                                 </div>
                                 <!-- CANOTE DA GEOMETRIA -->
@@ -172,7 +170,6 @@
                                     <select id="status-geometryStem" onchange="updateStatusSelectStyle(this)" class="w-full px-2 py-1 text-xs border rounded-lg font-bold">
                                         <option value="BOM / OK">BOM / OK</option>
                                         <option value="TROCAR PEÇA">TROCAR PEÇA</option>
-                                        <option value="NÃO RECEBIDO">NÃO RECEBIDO</option>
                                     </select>
                                 </div>
                                 <!-- FLANGE DA GEOMETRIA -->
@@ -185,7 +182,6 @@
                                     <select id="status-geometryFlange" onchange="updateStatusSelectStyle(this)" class="w-full px-2 py-1 text-xs border rounded-lg font-bold">
                                         <option value="BOM / OK">BOM / OK</option>
                                         <option value="TROCAR PEÇA">TROCAR PEÇA</option>
-                                        <option value="NÃO RECEBIDO">NÃO RECEBIDO</option>
                                     </select>
                                 </div>
                             </div>
@@ -559,14 +555,15 @@
         }
         
         // Aplica cores dinamicamente aos dropdowns de status (CORRIGIDO PARA TROCAR/TROCAR PEÇA)
-        function updateStatusSelectStyle(event) {
+function updateStatusSelectStyle(event) {
             const select = event.target || event;
             if (!select || !select.classList) return;
 
-            select.classList.remove('bg-slate-400', 'bg-green-500', 'bg-red-600', 'bg-yellow-500', 'text-white', 'text-gray-800', 'bg-white', 'opacity-50', 'bg-slate-200');
+            // Limpa todas as classes de cor possíveis
+            select.classList.remove('bg-slate-400', 'bg-green-500', 'bg-red-600', 'bg-yellow-500', 'text-white', 'text-gray-800', 'bg-white', 'opacity-50', 'bg-slate-200', 'grayscale');
             
             const value = select.value;
-            let bgColor = 'bg-slate-400'; 
+            let bgColor = 'bg-slate-400'; // Default: Cinza (NÃO INFORMADO)
             let textColor = 'text-white';
 
             if (value.includes('OK')) {
@@ -577,8 +574,8 @@
                 bgColor = 'bg-red-600';
             } else if (value === 'NÃO RECEBIDO') {
                 bgColor = 'bg-slate-200';
-                textColor = 'text-gray-400';
-                select.classList.add('opacity-50');
+                textColor = 'text-slate-500';
+                select.classList.add('opacity-50', 'grayscale');
             }
 
             select.classList.add(bgColor, textColor);
@@ -622,7 +619,6 @@ function populateForm(order) {
 
             Object.entries(mapping).forEach(([key, fields]) => {
                 let itemData = extras ? extras[key] : null;
-                // Trata boolean direto ou objeto {came: true}
                 const hasItem = itemData === true || (itemData && itemData.came === true);
                 
                 const checkEl = document.getElementById(fields.check);
@@ -630,15 +626,25 @@ function populateForm(order) {
 
                 if (checkEl && statusEl) {
                     checkEl.checked = hasItem;
-                    checkEl.disabled = true; // Trava o checkbox (Analista não muda o que o cliente trouxe)
+                    checkEl.disabled = true;
                     
                     const cardContainer = statusEl.closest('.border');
 
+                    // Limpa opções temporárias anteriores (evita duplicar "Não recebido")
+                    const tempOption = statusEl.querySelector('option[value="NÃO RECEBIDO"]');
+                    if (tempOption) tempOption.remove();
+
                     if (hasItem) {
                         statusEl.disabled = false;
-                        if (statusEl.value === "NÃO RECEBIDO") statusEl.value = "BOM / OK";
+                        statusEl.value = "BOM / OK";
                         cardContainer.classList.remove('opacity-40', 'bg-gray-100', 'grayscale');
                     } else {
+                        // Se não veio, cria a opção "Não Recebido" dinamicamente apenas para este caso
+                        const opt = document.createElement('option');
+                        opt.value = "NÃO RECEBIDO";
+                        opt.text = "NÃO RECEBIDO";
+                        statusEl.add(opt);
+                        
                         statusEl.value = "NÃO RECEBIDO";
                         statusEl.disabled = true;
                         cardContainer.classList.add('opacity-40', 'bg-gray-100', 'grayscale');
@@ -782,8 +788,8 @@ function populateForm(order) {
                 const statusSelect = document.getElementById(`status-${cleanName}`);
                 const obsTextarea = document.getElementById(`obs-${cleanName}`);
 
-                // Inclui apenas itens que não estão como 'Não Informado' (que é o valor default)
-                if (statusSelect && obsTextarea && statusSelect.value !== 'Não Informado') {
+                // Inclui apenas itens que não estão como 'NÃO INFORMADO' (valor default)
+                if (statusSelect && obsTextarea && statusSelect.value !== 'NÃO INFORMADO' && statusSelect.value !== 'Não Informado') {
                     data.push({
                         name: itemName,
                         status: statusSelect.value,
@@ -1163,26 +1169,42 @@ function abrirRaioX(id) {
         }
 
         // Função para Gerar Excel com nomes técnicos (CT, CCO, CCE, etc)
-        function gerarRelatorioExcel(payload) {
+function gerarRelatorioExcel(payload) {
             const mapping = {
                 'Carcaça Compressora': 'CCO',
                 'Carcaça Central': 'CCE',
                 'Eixo Rotor': 'Eixo',
                 'Rotor Compressor': 'Rotor',
-                'Trincas (Parede)': 'CT'
+                'Trincas (Parede)': 'CT',
+                'Prato Compressor': 'Prato',
+                'Colar': 'Colar',
+                'Atuador': 'Atuador',
+                'Geometria Variável': 'Geometria'
             };
+
+            // Prepara os dados incluindo os Adicionais do Topo
+            const adicionais = [
+                ['Atuador', payload.maintenance_extras.actuator.status, ''],
+                ['Geometria', payload.maintenance_extras.geometry.status, ''],
+                ['Canote', payload.maintenance_extras.geometryStem.status, ''],
+                ['Flange', payload.maintenance_extras.geometryFlange.status, '']
+            ];
 
             const data = [
                 ["ITEM", "STATUS", "OBSERVAÇÃO"],
-                ...payload.attachments.map(i => [i.name, i.status, i.obs]),
+                ...adicionais,
+                ...payload.attachments.map(i => [mapping[i.name] || i.name, i.status, i.obs]),
                 ...payload.general_repairs.map(i => [mapping[i.name] || i.name, i.status, i.obs]),
                 ...payload.snail_checklist.map(i => [mapping[i.name] || i.name, i.status, i.obs])
             ];
 
             const ws = XLSX.utils.aoa_to_sheet(data);
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Análise Técnica");
-            XLSX.writeFile(wb, `Analise_${payload.os_id}.xlsx`);
+            XLSX.utils.book_append_sheet(wb, ws, "Analise_Tecnica");
+            
+            // Nome do arquivo com ID da OS e Data
+            const fileName = `Analise_${payload.os_id}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.xlsx`;
+            XLSX.writeFile(wb, fileName);
         }
 </script>
 </body>
