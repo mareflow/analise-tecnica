@@ -124,11 +124,16 @@
                             <div class="col-span-1">
                                 <select id="pattern-select" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-brand-blue focus:border-brand-blue">
                                     <option value="">Selecione o Padrão...</option>
-                                    <script>
-                                        for(let i = 1; i <= 8; i++) {
-                                            document.write(`<option value="Padrão ${i}">Padrão ${i}</option>`);
-                                        }
-                                    </script>
+                                    <option value="Padrão 1">Padrão 1</option>
+                                    <option value="Padrão 2">Padrão 2</option>
+                                    <option value="Padrão 2A">Padrão 2A</option>
+                                    <option value="Padrão 3">Padrão 3</option>
+                                    <option value="Padrão 4">Padrão 4</option>
+                                    <option value="Padrão 4A">Padrão 4A</option>
+                                    <option value="Padrão 5">Padrão 5</option>
+                                    <option value="Padrão 6">Padrão 6</option>
+                                    <option value="Padrão 7">Padrão 7</option>
+                                    <option value="Padrão 8">Padrão 8</option>
                                 </select>
                             </div>
                             <!-- Itens Adicionais Check/Status - CLASSES DE COR INICIAIS REMOVIDAS -->
@@ -912,8 +917,32 @@ function populateForm(order) {
             analysisSavedModal = document.getElementById('analysis-saved-modal');
             analysisSavedOkBtn = document.getElementById('analysis-saved-ok-btn');
             
-            // 1. Renderiza o formulário padrão
+// 1. Renderiza o formulário padrão
             renderAnalysisForm();
+
+            // 2. UNÍSSONO: Inteligência de Padrões (Preenchimento Automático)
+            document.getElementById('pattern-select').addEventListener('change', function(e) {
+                const padrao = e.target.value;
+                const dados = PADROES_LOGICA[padrao];
+                
+                if (dados) {
+                    // IDs baseados na função createFormRow
+                    const mapeamento = {
+                        'status-eixo_rotor': dados.eixo,
+                        'status-rotor_compressor': dados.rotor,
+                        'status-carcaça_compressor': dados.ct
+                    };
+
+                    Object.entries(mapeamento).forEach(([id, valor]) => {
+                        const el = document.getElementById(id);
+                        if (el) {
+                            el.value = valor;
+                            // Dispara o evento para atualizar a cor (verde/vermelho)
+                            updateStatusSelectStyle({ target: el });
+                        }
+                    });
+                }
+            });
 
             // 2. Inteligência de Padrões
             document.getElementById('pattern-select').addEventListener('change', function(e) {
