@@ -395,26 +395,26 @@
         let activeOSId = null;
 
         // Dados estáticos para o formulário
-        const STATUS_OPTIONS_EXTERNAL = ['Não Informado', 'PEÇA OK', 'RECONDICIONAR', 'TROCAR'];
+        const STATUS_OPTIONS_EXTERNAL = ['PEÇA OK', 'RECONDICIONAR', 'TROCAR'];
         const STATUS_OPTIONS_CARACOL = ['PEÇA OK', 'RECONDICIONAR', 'TROCAR']; 
 
         const ANALYSIS_ITEMS = {
             tab1: ['Abraçadeiras', 'Mangueiras', 'Flanges', 'Canos', 'Calços', 'Coletor', 'Prisioneiros'],
-            tab2: ['Parafusos', 'Carcaça Compressor', 'Carcaça Central', 'Rotor Compressor', 'Eixo Rotor', 'Prato Compressor', 'Colar'],
+            tab2: ['Parafusos', 'Carcaça Compressora', 'Carcaça Central', 'Rotor Compressor', 'Eixo Rotor', 'Prato Compressor', 'Colar'],
             tab3: ['Trincas (Parede)', 'Roscas / Prisioneiros', 'Assento da Válvula', 'Faceamento']
         };
 
         const PADROES_LOGICA = {
-            "Padrão 1":  { eixo: "BOM / OK", rotor: "BOM / OK", ct: "BOM / OK" },
-            "Padrão 2":  { eixo: "BOM / OK", rotor: "BOM / OK", ct: "TROCAR PEÇA" },
-            "Padrão 2A": { eixo: "RECONDICIONAR", rotor: "BOM / OK", ct: "BOM / OK" },
-            "Padrão 3":  { eixo: "BOM / OK", rotor: "TROCAR PEÇA", ct: "BOM / OK" },
-            "Padrão 4":  { eixo: "BOM / OK", rotor: "TROCAR PEÇA", ct: "TROCAR PEÇA" },
-            "Padrão 4A": { eixo: "RECONDICIONAR", rotor: "TROCAR PEÇA", ct: "TROCAR PEÇA" },
-            "Padrão 5":  { eixo: "TROCAR PEÇA", rotor: "BOM / OK", ct: "BOM / OK" },
-            "Padrão 6":  { eixo: "TROCAR PEÇA", rotor: "TROCAR PEÇA", ct: "BOM / OK" },
-            "Padrão 7":  { eixo: "TROCAR PEÇA", rotor: "BOM / OK", ct: "TROCAR PEÇA" },
-            "Padrão 8":  { eixo: "TROCAR PEÇA", rotor: "TROCAR PEÇA", ct: "TROCAR PEÇA" }
+            "Padrão 1":  { eixo: "PEÇA OK", rotor: "PEÇA OK", ct: "PEÇA OK" },
+            "Padrão 2":  { eixo: "PEÇA OK", rotor: "PEÇA OK", ct: "TROCAR" },
+            "Padrão 2A": { eixo: "RECONDICIONAR", rotor: "PEÇA OK", ct: "PEÇA OK" },
+            "Padrão 3":  { eixo: "PEÇA OK", rotor: "TROCAR", ct: "PEÇA OK" },
+            "Padrão 4":  { eixo: "PEÇA OK", rotor: "TROCAR", ct: "TROCAR" },
+            "Padrão 4A": { eixo: "RECONDICIONAR", rotor: "TROCAR", ct: "TROCAR" },
+            "Padrão 5":  { eixo: "TROCAR", rotor: "PEÇA OK", ct: "PEÇA OK" },
+            "Padrão 6":  { eixo: "TROCAR", rotor: "TROCAR", ct: "PEÇA OK" },
+            "Padrão 7":  { eixo: "TROCAR", rotor: "PEÇA OK", ct: "TROCAR" },
+            "Padrão 8":  { eixo: "TROCAR", rotor: "TROCAR", ct: "TROCAR" }
         };
 
         const MAINTENANCE_MAP = {
@@ -544,13 +544,13 @@
         // Gera o HTML da linha do formulário (Dropdown + Obs)
         function createFormRow(itemName, options) {
             const cleanName = itemName.replace(/\s+/g, '_').toLowerCase();
-            const optionTags = options.map(opt => `<option value="${opt}" ${opt === 'Não Informado' ? 'selected' : ''}>${opt}</option>`).join('');
+            const optionTags = options.map(opt => `<option value="${opt}">${opt}</option>`).join('');
             
-            // O select tem a classe bg-white, que está causando o problema de fundo branco ao selecionar TROCAR
             return `
                 <div class="grid grid-cols-4 gap-4 items-center border-b py-2">
                     <label class="col-span-2 text-sm font-medium text-gray-700">${itemName}</label>
-                    <select id="status-${cleanName}" name="status-${cleanName}" class="col-span-1 w-full px-2 py-1 text-sm border rounded-lg bg-white focus:ring-brand-blue status-select">
+                    <select id="status-${cleanName}" name="status-${cleanName}" onchange="updateStatusSelectStyle(this)"
+                        class="col-span-1 w-full px-2 py-1 text-sm border rounded-lg bg-green-500 text-white font-bold status-select">
                         ${optionTags}
                     </select>
                     <textarea id="obs-${cleanName}" name="obs-${cleanName}" placeholder="Obs..." rows="1" class="col-span-1 w-full px-2 py-1 text-xs border rounded-lg obs-area resize-none"></textarea>
@@ -560,8 +560,9 @@
         
         // Aplica cores dinamicamente aos dropdowns de status (CORRIGIDO PARA TROCAR/TROCAR PEÇA)
         function updateStatusSelectStyle(event) {
-            const select = event.target;
-            // Lista completa de classes de cor a serem removidas. ADICIONADO 'bg-white' para corrigir o problema do fundo branco ao selecionar 'TROCAR'.
+            const select = event.target || event;
+            if (!select.classList) return;
+
             select.classList.remove('bg-slate-200', 'bg-green-500', 'bg-red-600', 'bg-yellow-500', 'text-white', 'text-gray-800', 'bg-white');
             
             const value = select.value;
@@ -572,14 +573,13 @@
                 bgColor = 'bg-green-500';
                 textColor = 'text-white';
             } else if (value.includes('TROCAR')) { 
-                bgColor = 'bg-red-600'; // Vermelho para TROCAR e TROCAR PEÇA
+                bgColor = 'bg-red-600';
                 textColor = 'text-white';
             } else if (value.includes('RECONDICIONAR')) {
                 bgColor = 'bg-yellow-500';
                 textColor = 'text-white';
             } 
 
-            // Se for 'Não Informado' ou outro fallback, mantém o padrão cinza.
             select.classList.add(bgColor, textColor);
         }
         
@@ -920,44 +920,23 @@ function populateForm(order) {
 // 1. Renderiza o formulário padrão
             renderAnalysisForm();
 
-            // 2. UNÍSSONO: Inteligência de Padrões (Preenchimento Automático)
+            // 2. Inteligência de Padrões (Preenchimento Automático Corrigido)
             document.getElementById('pattern-select').addEventListener('change', function(e) {
                 const padrao = e.target.value;
                 const dados = PADROES_LOGICA[padrao];
                 
                 if (dados) {
-                    // IDs baseados na função createFormRow
                     const mapeamento = {
                         'status-eixo_rotor': dados.eixo,
                         'status-rotor_compressor': dados.rotor,
-                        'status-carcaça_compressor': dados.ct
+                        'status-carcaça_compressora': dados.ct
                     };
 
                     Object.entries(mapeamento).forEach(([id, valor]) => {
                         const el = document.getElementById(id);
                         if (el) {
                             el.value = valor;
-                            // Dispara o evento para atualizar a cor (verde/vermelho)
-                            updateStatusSelectStyle({ target: el });
-                        }
-                    });
-                }
-            });
-
-            // 2. Inteligência de Padrões
-            document.getElementById('pattern-select').addEventListener('change', function(e) {
-                const data = PADROES_LOGICA[e.target.value];
-                if (data) {
-                    const fields = {
-                        'status-eixo_rotor': data.eixo,
-                        'status-rotor_compressor': data.rotor,
-                        'status-carcaca_compressor': data.ct
-                    };
-                    Object.entries(fields).forEach(([id, val]) => {
-                        const el = document.getElementById(id);
-                        if (el) {
-                            el.value = val;
-                            el.dispatchEvent(new Event('change'));
+                            updateStatusSelectStyle(el);
                         }
                     });
                 }
