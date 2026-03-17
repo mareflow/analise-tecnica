@@ -358,6 +358,23 @@
             </div>
         </div>
     </div>
+
+    <!-- MODAL: CONFIRMAR RECEBIMENTO DE CASCO (BONITO) -->
+    <div id="hull-confirmation-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-[130]">
+        <div class="bg-white w-full max-w-sm rounded-xl shadow-2xl p-6 text-center">
+            <div class="w-16 h-16 bg-blue-100 text-brand-blue rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <h3 class="text-xl font-black text-slate-800 uppercase tracking-tighter mb-2">Receber Casco?</h3>
+            <p class="text-sm text-gray-500 font-medium leading-relaxed mb-6">Confirmar recebimento do casco? A Ordem de Serviço voltará para a **Fila de Produção** imediatamente.</p>
+            
+            <div class="flex space-x-3">
+                <button type="button" onclick="document.getElementById('hull-confirmation-modal').classList.add('hidden')" class="flex-1 bg-slate-200 text-slate-600 font-bold py-3 rounded-lg text-xs uppercase tracking-widest hover:bg-slate-300 transition">Cancelar</button>
+                <button type="button" id="confirm-hull-btn" class="flex-[2] bg-green-600 text-white font-black py-3 rounded-lg text-xs uppercase tracking-widest shadow-lg shadow-green-100 hover:bg-green-700 transition">Sim, Receber</button>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL RAIO-X -->
     <div id="raiox-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-[110]">
         <div class="bg-white w-full max-w-2xl rounded-xl shadow-2xl p-6">
@@ -1191,26 +1208,39 @@ function abrirRaioX(id) {
         }
 
         // FUNÇÃO PARA RECEBER CASCO E VOLTAR PARA A FILA DE ANÁLISE
-        async function liberarCasco(id) {
-            if(!confirm("Confirmar recebimento do casco? A OS voltará para a fila de produção.")) return;
+// FUNÇÃO PARA RECEBER CASCO (Agora com Modal TurboSul)
+        function liberarCasco(id) {
+            const modalHull = document.getElementById('hull-confirmation-modal');
+            const btnConfirm = document.getElementById('confirm-hull-btn');
             
-            try {
-                const response = await fetch('https://teste.mareflow.com.br/webhook/orders/update-status', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ os_id: id, status: 'Aguardando Análise Técnica' })
-                });
+            modalHull.classList.remove('hidden');
+            modalHull.classList.add('flex');
 
-                if (response.ok) {
-                    alert("Casco recebido com sucesso!");
-                    await loadAnalysisOrders(); // UNÍSSONO: Recarrega a sidebar e zera o Standby
-                } else {
-                    alert("Erro ao atualizar status no servidor.");
+            // Configura o clique do botão interno do modal
+            btnConfirm.onclick = async () => {
+                btnConfirm.disabled = true;
+                btnConfirm.textContent = "Processando...";
+                
+                try {
+                    const response = await fetch('https://teste.mareflow.com.br/webhook/orders/update-status', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ os_id: id, status: 'Aguardando Análise Técnica' })
+                    });
+
+                    if (response.ok) {
+                        modalHull.classList.add('hidden');
+                        await loadAnalysisOrders(); // Recarrega a sidebar
+                    } else {
+                        alert("Erro no servidor ao receber casco.");
+                    }
+                } catch (err) {
+                    console.error(err);
+                } finally {
+                    btnConfirm.disabled = false;
+                    btnConfirm.textContent = "SIM, RECEBER";
                 }
-            } catch (err) {
-                console.error("Erro técnico:", err);
-                alert("Falha de conexão com o sistema.");
-            }
+            };
         }
 
         // Função para Gerar Excel com nomes técnicos (CT, CCO, CCE, etc)
