@@ -989,14 +989,13 @@ async function showDetailsModalWithHistory(order) {
             document.getElementById('pattern-select').addEventListener('change', function(e) {
                 const padrao = e.target.value;
                 const dados = PADROES_LOGICA[padrao];
-                
                 if (dados) {
                     const mapeamento = {
                         'status-eixo_rotor': dados.eixo,
                         'status-rotor_compressor': dados.rotor,
-                        'status-trincas_(parede)': dados.ct 
+                        'status-carcaça_compressora': dados.ct,
+                        'status-trincas_(parede)': dados.ct // Mapeia para ambos os nomes possíveis no banco
                     };
-
                     Object.entries(mapeamento).forEach(([id, valor]) => {
                         const el = document.getElementById(id);
                         if (el) {
@@ -1006,8 +1005,6 @@ async function showDetailsModalWithHistory(order) {
                     });
                 }
             });
-
-            // Filtro removido para permitir a palavra RECONDICIONAR
             
             // Adiciona listeners para mudança de cor nos selects de status (Todos os selects da página)
             document.querySelectorAll('.status-select').forEach(select => {
@@ -1022,7 +1019,7 @@ async function showDetailsModalWithHistory(order) {
             });
 
 
-            // Listener de Logout
+// Listener de Logout
             logoutBtn.addEventListener('click', async () => {
                 await supabaseClient.auth.signOut();
                 window.location.href = '/index.html';
@@ -1037,9 +1034,6 @@ async function showDetailsModalWithHistory(order) {
                     modalDetails.classList.remove('flex');
                 });
             }
-                await supabaseClient.auth.signOut();
-                window.location.href = '/index.html';
-            });
             
             // Listener das Abas
             tabButtons.forEach(button => {
