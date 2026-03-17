@@ -1101,8 +1101,9 @@ async function showDetailsModalWithHistory(order) {
         });
 
         function updateSidebarUI() {
-            const fila = currentOrders.filter(o => o.status !== 'Standby / Aguardando Casco');
-            const standby = currentOrders.filter(o => o.status === 'Standby / Aguardando Casco');
+            // Filtro Inteligente: Se for standby no status OU na opção de troca, vai para a aba cinza
+            const fila = currentOrders.filter(o => o.status !== 'Standby / Aguardando Casco' && o.trade_in_option !== 'Standby');
+            const standby = currentOrders.filter(o => o.status === 'Standby / Aguardando Casco' || o.trade_in_option === 'Standby');
             
             // Blindagem: só tenta escrever se os elementos existirem
             const cf = document.getElementById('count-fila');
