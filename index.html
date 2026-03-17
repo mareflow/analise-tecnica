@@ -110,8 +110,8 @@
                     <!-- Área Fixa: Título e Detalhes da OS Selecionada -->
                     <div class="p-4 border-b bg-gray-50 flex justify-between items-center rounded-t-lg">
                         <h3 id="form-title" class="text-xl font-semibold text-gray-800">Formulário de Análise - ANA-XXX</h3>
-                        <button class="bg-slate-300 hover:bg-slate-400 text-gray-800 font-medium py-1 px-3 rounded-md transition duration-150">
-                            Detalhes da OS
+                        <button type="button" id="btn-historico-completo" class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-1 px-3 rounded-md transition duration-150 uppercase text-[10px] tracking-widest">
+                            Histórico Completo
                         </button>
                     </div>
 
@@ -332,8 +332,10 @@
                     <p id="detail-observation" class="bg-slate-50 p-3 rounded-lg text-gray-800 italic">Nenhuma observação registrada.</p>
                 </div>
                 
-                <h4 class="text-base font-semibold text-gray-800 border-b pb-2 pt-4">Histórico de Eventos</h4>
-                <p class="text-gray-500 italic">Funcionalidade de histórico não implementada (Placeholder).</p>
+                <h4 class="text-base font-semibold text-gray-800 border-b pb-2 pt-4 uppercase text-xs tracking-widest">Linha do Tempo de Produção</h4>
+                <div id="timeline-container" class="mt-4 space-y-4 border-l-2 border-slate-200 ml-2 pl-4">
+                    <!-- Histórico será injetado aqui -->
+                </div>
             </div>
         </div>
     </div>
@@ -600,16 +602,19 @@ function updateStatusSelectStyle(event) {
         // Preenche o formulário ao selecionar uma OS
 function populateForm(order) {
             activeOSId = order.id;
-            const modal = document.getElementById('raiox-modal');
-            if(modal) modal.classList.add('hidden');
+            const modalRaioX = document.getElementById('raiox-modal');
+            if(modalRaioX) modalRaioX.classList.add('hidden');
             
             document.getElementById('analysis-form-wrapper').classList.remove('hidden');
             document.getElementById('initial-placeholder').classList.add('hidden');
             document.getElementById('form-title').textContent = `Formulário de Análise - ${order.business_id}`;
 
-            // --- UNÍSSONO: Lógica dos Itens Adicionais (Atuador, Geometria, etc.) ---
+            // Configuração do Botão de Histórico no Modal
+            const btnHist = document.getElementById('btn-historico-completo');
+            btnHist.onclick = () => showDetailsModalWithHistory(order);
+
+            // --- Lógica dos Itens Adicionais (Atuador, Geometria...) ---
             const extras = typeof order.maintenance_extras === 'string' ? JSON.parse(order.maintenance_extras) : order.maintenance_extras;
-            
             const mapping = {
                 actuator: { check: 'check-actuator', status: 'status-actuator' },
                 geometry: { check: 'check-geometry', status: 'status-geometry' },
@@ -618,49 +623,65 @@ function populateForm(order) {
             };
 
             Object.entries(mapping).forEach(([key, fields]) => {
-                let itemData = extras ? extras[key] : null;
+                const itemData = extras ? extras[key] : null;
                 const hasItem = itemData === true || (itemData && itemData.came === true);
-                
                 const checkEl = document.getElementById(fields.check);
                 const statusEl = document.getElementById(fields.status);
-
                 if (checkEl && statusEl) {
                     checkEl.checked = hasItem;
                     checkEl.disabled = true;
-                    
-                    const cardContainer = statusEl.closest('.border');
-
-                    // Limpa opções temporárias anteriores (evita duplicar "Não recebido")
-                    const tempOption = statusEl.querySelector('option[value="NÃO RECEBIDO"]');
-                    if (tempOption) tempOption.remove();
-
                     if (hasItem) {
                         statusEl.disabled = false;
-                        statusEl.value = "BOM / OK";
-                        cardContainer.classList.remove('opacity-40', 'bg-gray-100', 'grayscale');
+                        statusEl.parentElement.classList.remove('opacity-40', 'bg-gray-100');
                     } else {
-                        // Se não veio, cria a opção "Não Recebido" dinamicamente apenas para este caso
-                        const opt = document.createElement('option');
-                        opt.value = "NÃO RECEBIDO";
-                        opt.text = "NÃO RECEBIDO";
-                        statusEl.add(opt);
-                        
                         statusEl.value = "NÃO RECEBIDO";
                         statusEl.disabled = true;
-                        cardContainer.classList.add('opacity-40', 'bg-gray-100', 'grayscale');
+                        statusEl.parentElement.classList.add('opacity-40', 'bg-gray-100');
                     }
-                    updateStatusSelectStyle(statusEl);
+                    updateStatusSelectStyle({ target: statusEl });
                 }
             });
 
-            // --- UNÍSSONO: Lógica de Padrões (1-8) ---
-            // Exemplo: Se for Padrão 8 (Conjunto Novo), já marca Eixo e Rotor para Trocar
             if (order.difficulty) {
                 document.getElementById('pattern-select').value = `Padrão ${order.difficulty}`;
                 aplicarPadraoManutencao(order.difficulty);
             }
-
             switchTab('tab1');
+        }
+
+        async function showDetailsModalWithHistory(order) {
+            // Preenche dados básicos no modal
+            document.getElementById('detail-business-id').textContent = order.business_id;
+            document.getElementById('detail-model').textContent = order.model;
+            document.getElementById('detail-client').textContent = order.client;
+            document.getElementById('detail-status').textContent = order.status;
+            document.getElementById('detail-urgency').textContent = order.urgency || 'Normal';
+            document.getElementById('detail-created-at').textContent = formatDateTime(order.created_at);
+            
+            // Busca Histórico Real no Supabase
+            const timeline = document.getElementById('timeline-container');
+            timeline.innerHTML = '<p class="text-xs text-gray-400 animate-pulse">Carregando eventos...</p>';
+            
+            const { data: events, error } = await supabaseClient
+                .from('history_events')
+                .select('*')
+                .eq('service_order_id', order.id)
+                .order('timestamp', { ascending: true });
+
+            if (!error && events) {
+                timeline.innerHTML = events.map(ev => `
+                    <div class="relative">
+                        <div class="absolute -left-[21px] top-1 w-3 h-3 bg-brand-blue rounded-full border-2 border-white"></div>
+                        <p class="text-[11px] font-black text-slate-800 uppercase tracking-tighter">${ev.action}</p>
+                        <p class="text-[10px] text-gray-500 font-medium">${new Date(ev.timestamp).toLocaleString('pt-BR')}</p>
+                    </div>
+                `).join('');
+            } else {
+                timeline.innerHTML = '<p class="text-xs text-gray-400 italic">Nenhum evento registrado.</p>';
+            }
+
+            document.getElementById('details-modal').classList.remove('hidden');
+            document.getElementById('details-modal').classList.add('flex');
         }
 
         function aplicarPadraoManutencao(nivel) {
