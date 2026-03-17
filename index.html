@@ -469,16 +469,15 @@
             }
         }
 
-        function formatMaintenanceExtras(extras) {
-            if (!extras || typeof extras !== 'object') { return '<li>Nenhum item adicional selecionado.</li>'; }
+function formatMaintenanceExtras(extras) {
+            if (!extras || typeof extras !== 'object') return '<li class="text-gray-400">Nenhum item adicional.</li>';
             
-            const selectedItems = Object.keys(extras)
-                .filter(key => extras[key] === true)
-                .map(key => MAINTENANCE_MAP[key] || key);
-                
-            if (selectedItems.length === 0) { return '<li>Nenhum item adicional selecionado.</li>'; }
-            
-            return selectedItems.map(item => `<li>${item}</li>`).join('');
+            const mapping = { actuator: 'Atuador', geometry: 'Geometria Variável', geometryStem: 'Canote da Geometria', geometryFlange: 'Flange da Geometria' };
+            const items = Object.entries(extras)
+                .filter(([_, val]) => val === true || (val && val.came === true))
+                .map(([key, _]) => `<li class="font-bold text-slate-700">${mapping[key] || key}</li>`);
+
+            return items.length > 0 ? items.join('') : '<li class="text-gray-400">Nenhum item adicional.</li>';
         }
         
         function renderOrderCard(order) {
@@ -649,36 +648,52 @@ function populateForm(order) {
             switchTab('tab1');
         }
 
-        async function showDetailsModalWithHistory(order) {
-            // Preenche dados básicos no modal
+async function showDetailsModalWithHistory(order) {
+            // 1. Tratamento de Dados de Entrada
+            const extras = typeof order.maintenance_extras === 'string' ? JSON.parse(order.maintenance_extras) : order.maintenance_extras;
+            const tradeInText = order.is_trade_in ? `Venda à Base de Troca (${order.trade_in_option || 'Pendente'})` : 'Venda Comum';
+
+            // 2. Preenchimento dos Campos Básicos
             document.getElementById('detail-business-id').textContent = order.business_id;
             document.getElementById('detail-model').textContent = order.model;
             document.getElementById('detail-client').textContent = order.client;
             document.getElementById('detail-status').textContent = order.status;
             document.getElementById('detail-urgency').textContent = order.urgency || 'Normal';
+            document.getElementById('detail-urgency').className = 'inline-block text-xs font-bold px-2 py-0.5 rounded-full ' + getUrgencyBadge(order.urgency);
             document.getElementById('detail-created-at').textContent = formatDateTime(order.created_at);
             
-            // Busca Histórico Real no Supabase
-            const timeline = document.getElementById('timeline-container');
-            timeline.innerHTML = '<p class="text-xs text-gray-400 animate-pulse">Carregando eventos...</p>';
+            // 3. Detalhes Adicionais (Os que estavam vazios)
+            document.getElementById('detail-difficulty').textContent = order.difficulty || 'Não definido';
+            document.getElementById('detail-trade-in').textContent = tradeInText;
+            document.getElementById('detail-observation').textContent = order.observation || 'Nenhuma observação registrada.';
             
-            const { data: events, error } = await supabaseClient
-                .from('history_events')
-                .select('*')
-                .eq('service_order_id', order.id)
-                .order('timestamp', { ascending: true });
+            // 4. Itens Adicionais (Lista de Atuador, Geometria...)
+            const listExtras = document.getElementById('detail-maintenance-extras');
+            listExtras.innerHTML = formatMaintenanceExtras(extras);
 
-            if (!error && events) {
-                timeline.innerHTML = events.map(ev => `
-                    <div class="relative">
-                        <div class="absolute -left-[21px] top-1 w-3 h-3 bg-brand-blue rounded-full border-2 border-white"></div>
-                        <p class="text-[11px] font-black text-slate-800 uppercase tracking-tighter">${ev.action}</p>
-                        <p class="text-[10px] text-gray-500 font-medium">${new Date(ev.timestamp).toLocaleString('pt-BR')}</p>
-                    </div>
-                `).join('');
-            } else {
-                timeline.innerHTML = '<p class="text-xs text-gray-400 italic">Nenhum evento registrado.</p>';
-            }
+            // 5. Busca e Renderização da Linha do Tempo
+            const timeline = document.getElementById('timeline-container');
+            timeline.innerHTML = '<p class="text-xs text-gray-400 animate-pulse">Carregando histórico...</p>';
+            
+            try {
+                const { data: events, error } = await supabaseClient
+                    .from('history_events')
+                    .select('*')
+                    .eq('service_order_id', order.id)
+                    .order('timestamp', { ascending: true });
+
+                if (!error && events && events.length > 0) {
+                    timeline.innerHTML = events.map(ev => `
+                        <div class="relative">
+                            <div class="absolute -left-[21px] top-1 w-3 h-3 bg-brand-blue rounded-full border-2 border-white"></div>
+                            <p class="text-[11px] font-black text-slate-800 uppercase tracking-tighter">${ev.action}</p>
+                            <p class="text-[10px] text-gray-500 font-medium">${new Date(ev.timestamp).toLocaleString('pt-BR')}</p>
+                        </div>
+                    `).join('');
+                } else {
+                    timeline.innerHTML = '<p class="text-xs text-gray-400 italic">Nenhum evento registrado.</p>';
+                }
+            } catch (err) { console.error(err); }
 
             document.getElementById('details-modal').classList.remove('hidden');
             document.getElementById('details-modal').classList.add('flex');
@@ -1009,6 +1024,19 @@ function populateForm(order) {
 
             // Listener de Logout
             logoutBtn.addEventListener('click', async () => {
+                await supabaseClient.auth.signOut();
+                window.location.href = '/index.html';
+            });
+
+            // ATIVADOR DO BOTÃO FECHAR (X) DO MODAL
+            const btnFecharModal = document.getElementById('close-details-modal-btn');
+            if (btnFecharModal) {
+                btnFecharModal.addEventListener('click', () => {
+                    const modalDetails = document.getElementById('details-modal');
+                    modalDetails.classList.add('hidden');
+                    modalDetails.classList.remove('flex');
+                });
+            }
                 await supabaseClient.auth.signOut();
                 window.location.href = '/index.html';
             });
