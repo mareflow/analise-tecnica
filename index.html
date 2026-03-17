@@ -481,7 +481,8 @@ function formatMaintenanceExtras(extras) {
         }
         
         function renderOrderCard(order) {
-            const isStandby = order.status === 'Standby / Aguardando Casco';
+            // Inteligência de Botão: Mostra as ações se o status OU a opção de troca indicarem Standby
+            const isStandby = order.status === 'Standby / Aguardando Casco' || order.trade_in_option === 'Standby';
             const urgencyText = order.urgency || 'Normal';
             const urgencyClass = getUrgencyBadge(urgencyText);
             
