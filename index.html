@@ -43,7 +43,7 @@
         }
     </style>
 </head>
-<body class="bg-slate-100 h-screen flex flex-col overflow-hidden">
+<body class="bg-slate-100 min-h-screen flex flex-col">
 
     <!-- HEADER FIXO (Topo da Tela) -->
     <header class="fixed top-0 left-0 right-0 h-20 bg-white shadow-md z-10 flex items-center justify-between px-8">
@@ -72,7 +72,10 @@
     </header>
 
     <!-- CONTEÚDO PRINCIPAL (Layout de 3 Colunas) -->
-    <main class="flex-1 flex overflow-hidden p-6 gap-6 pt-24 min-h-0">
+    <main class="flex-1 flex items-start p-6 gap-6 pt-24">
+        
+        <!-- Coluna 1: Fila de Trabalho (Fixa ao rolar) -->
+        <div class="w-1/4 max-w-xs bg-white rounded-lg shadow p-4 flex flex-col space-y-4 sticky top-24 max-h-[calc(100vh-120px)] overflow-y-auto">
         
         <!-- Coluna 1: Fila de Trabalho (25%) -->
         <div class="w-1/4 max-w-xs bg-white rounded-lg shadow p-4 flex flex-col space-y-4 overflow-y-auto">
@@ -103,7 +106,7 @@
             </div>
 
             <!-- Formulário de Análise (Visível após clique) -->
-            <div id="analysis-form-wrapper" class="bg-white rounded-lg shadow flex-grow hidden flex-col min-h-0">
+            <div id="analysis-form-wrapper" class="bg-white rounded-lg shadow flex-grow hidden flex-col">
                 
                 <form id="analysis-form" class="flex flex-col h-full">
 
@@ -196,7 +199,7 @@
                     </div>
 
                     <!-- Conteúdo das Abas -->
-                    <div id="tab-content-wrapper" class="flex-grow p-6 overflow-y-auto space-y-6">
+                    <div id="tab-content-wrapper" class="flex-grow p-6 space-y-6">
                         
                         <!-- TAB 1: Anexos (Itens Externos do Cliente) -->
                         <div id="tab1" class="tab-content space-y-4"></div>
@@ -207,8 +210,8 @@
                         <!-- TAB 3: Checklist do Caracol (Caixa Quente) -->
                         <div id="tab3" class="tab-content hidden space-y-4"></div>
                         
-                        <!-- Área de Resumo (Fixa no final da rolagem) -->
-                        <div class="sticky bottom-0 bg-white pt-4 border-t">
+                        <!-- Área de Resumo Final (Fim da Página) -->
+                        <div class="bg-white pt-10 border-t mt-10 pb-10">
                             <div class="grid grid-cols-2 gap-4 mb-4">
                                 <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
                                     <p class="text-sm font-semibold text-red-700">Peças para Substituição (Estoque/Vendas)</p>
@@ -220,9 +223,9 @@
                                 </div>
                             </div>
                             
-                            <div class="mb-4">
-                                <p class="text-sm font-semibold text-gray-700 mb-2">Observações gerais...</p>
-                                <textarea id="observacoes-analise" rows="3" class="w-full obs-area text-xs"></textarea>
+                            <div class="mb-6">
+                                <p class="text-sm font-bold text-slate-700 mb-3 uppercase tracking-tighter">Observações gerais da análise técnica</p>
+                                <textarea id="observacoes-analise" rows="4" class="w-full obs-area text-sm shadow-inner" placeholder="Descreva detalhes técnicos aqui..."></textarea>
                             </div>
 
                             <!-- Botão Finalizar -->
