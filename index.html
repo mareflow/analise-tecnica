@@ -443,13 +443,13 @@
 
         const PADROES_LOGICA = {
             "Padrão 1":  { eixo: "PEÇA OK", rotor: "PEÇA OK", ct: "PEÇA OK" },
-            "Padrão 2":  { eixo: "PEÇA OK", rotor: "PEÇA OK", ct: "RECONDICIONAR" },
-            "Padrão 3":  { eixo: "PEÇA OK", rotor: "RECONDICIONAR", ct: "PEÇA OK" },
-            "Padrão 4":  { eixo: "PEÇA OK", rotor: "RECONDICIONAR", ct: "RECONDICIONAR" },
-            "Padrão 5":  { eixo: "RECONDICIONAR", rotor: "PEÇA OK", ct: "PEÇA OK" },
-            "Padrão 6":  { eixo: "RECONDICIONAR", rotor: "RECONDICIONAR", ct: "PEÇA OK" },
-            "Padrão 7":  { eixo: "RECONDICIONAR", rotor: "PEÇA OK", ct: "RECONDICIONAR" },
-            "Padrão 8":  { eixo: "RECONDICIONAR", rotor: "RECONDICIONAR", ct: "RECONDICIONAR" }
+            "Padrão 2":  { eixo: "PEÇA OK", rotor: "PEÇA OK", ct: "TROCAR" },
+            "Padrão 3":  { eixo: "PEÇA OK", rotor: "TROCAR", ct: "PEÇA OK" },
+            "Padrão 4":  { eixo: "PEÇA OK", rotor: "TROCAR", ct: "TROCAR" },
+            "Padrão 5":  { eixo: "TROCAR", rotor: "PEÇA OK", ct: "PEÇA OK" },
+            "Padrão 6":  { Free: "TROCAR", rotor: "TROCAR", ct: "PEÇA OK" },
+            "Padrão 7":  { eixo: "TROCAR", rotor: "PEÇA OK", ct: "TROCAR" },
+            "Padrão 8":  { eixo: "TROCAR", rotor: "TROCAR", ct: "TROCAR" }
         };
 
         const MAINTENANCE_MAP = {
@@ -1065,20 +1065,54 @@ async function collectFormData() {
                 updateStatusSelectStyle({ target: select });
             });
 
-            // Inteligência de Resumo em Tempo Real (Aba 1 - Anexos Externos)
+            // Inteligência de Resumo em Tempo Real (Resumo Global de Trocas)
             document.getElementById('analysis-form').addEventListener('change', () => {
-                const anexosFaltantes = [];
-                ANALYSIS_ITEMS.tab1.forEach(item => {
-                    const cleanName = item.replace(/\s+/g, '_').toLowerCase();
-                    const el = document.getElementById(`status-${cleanName}`);
-                    if (el && el.value === 'TROCAR') anexosFaltantes.push(item);
+                const trocasExternas = [];
+                const trocasInternas = [];
+
+                // Varre todos os itens das 3 abas
+                Object.keys(ANALYSIS_ITEMS).forEach(tab => {
+                    ANALYSIS_ITEMS[tab].forEach(item => {
+                        const cleanName = item.replace(/\s+/g, '_').toLowerCase();
+                        const el = document.getElementById(`status-${cleanName}`);
+                        if (el && el.value === 'TROCAR') {
+                            if (tab === 'tab1') trocasExternas.push(item);
+                            else trocasInternas.push(item);
+                        }
+                    });
                 });
 
-                const resumo = document.getElementById('substituicao-resumo');
-                if (anexosFaltantes.length > 0) {
-                    resumo.innerHTML = `<span class="font-bold text-red-700">⚠️ VENDAS:</span> Necessário orçar: ${anexosFaltantes.join(', ')}`;
+                // Também verifica os Adicionais do Topo (Atuador, Geometria...)
+                ['actuator', 'geometry', 'geometryStem', 'geometryFlange'].forEach(id => {
+                    const el = document.getElementById(`status-${id}`);
+                    if (el && !el.disabled && el.value === 'TROCAR PEÇA') {
+                        trocasInternas.push(id.replace('geometry', 'Geometria '));
+                    }
+                });
+
+                const resumoPecas = document.getElementById('substituicao-resumo');
+                const resumoServicos = document.getElementById('servicos-resumo');
+
+                // Atualiza Resumo de Peças (Vendas/Estoque)
+                if (trocasExternas.length > 0 || trocasInternas.length > 0) {
+                    const totalPecas = [...trocasExternas, ...trocasInternas];
+                    resumoPecas.innerHTML = `<span class="font-black text-red-700">SUBSTITUIÇÃO:</span> ${totalPecas.join(', ')}`;
                 } else {
-                    resumo.innerText = 'Nenhuma peça crítica para substituição externa.';
+                    resumoPecas.innerText = 'Nenhuma peça para substituição.';
+                }
+
+                // Atualiza Resumo de Recondicionamento (Serviços)
+                const servicos = [];
+                document.querySelectorAll('.status-select').forEach(select => {
+                    if(select.value === 'RECONDICIONAR') {
+                        const itemName = select.closest('.grid').querySelector('label').innerText;
+                        servicos.push(itemName);
+                    }
+                });
+                if(servicos.length > 0) {
+                    resumoServicos.innerHTML = `<span class="font-black text-yellow-700">USINAGEM/SERVIÇOS:</span> ${servicos.join(', ')}`;
+                } else {
+                    resumoServicos.innerText = 'Nenhum serviço de usinagem selecionado.';
                 }
             });
 
