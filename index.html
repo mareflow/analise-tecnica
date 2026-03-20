@@ -43,7 +43,7 @@
         }
     </style>
 </head>
-<body class="bg-slate-100 pt-20 h-screen flex flex-col">
+<body class="bg-slate-100 h-screen flex flex-col overflow-hidden">
 
     <!-- HEADER FIXO (Topo da Tela) -->
     <header class="fixed top-0 left-0 right-0 h-20 bg-white shadow-md z-10 flex items-center justify-between px-8">
@@ -72,7 +72,7 @@
     </header>
 
     <!-- CONTEÚDO PRINCIPAL (Layout de 3 Colunas) -->
-    <main class="p-6 lg:p-6 flex space-x-6 flex-1 overflow-hidden">
+    <main class="flex-1 flex overflow-hidden p-6 gap-6 pt-24 min-h-0">
         
         <!-- Coluna 1: Fila de Trabalho (25%) -->
         <div class="w-1/4 max-w-xs bg-white rounded-lg shadow p-4 flex flex-col space-y-4 overflow-y-auto">
@@ -103,7 +103,7 @@
             </div>
 
             <!-- Formulário de Análise (Visível após clique) -->
-            <div id="analysis-form-wrapper" class="bg-white rounded-lg shadow flex-grow hidden">
+            <div id="analysis-form-wrapper" class="bg-white rounded-lg shadow flex-grow hidden flex-col min-h-0">
                 
                 <form id="analysis-form" class="flex flex-col h-full">
 
@@ -676,6 +676,9 @@ function populateForm(order) {
                 aplicarPadraoManutencao(order.difficulty);
             }
             switchTab('tab1');
+            // Garante que o formulário comece no topo ao carregar nova OS
+            const wrapper = document.getElementById('tab-content-wrapper');
+            if (wrapper) wrapper.scrollTop = 0;
         }
 
 async function showDetailsModalWithHistory(order) {
