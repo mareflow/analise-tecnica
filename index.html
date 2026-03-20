@@ -437,7 +437,7 @@
 
         const ANALYSIS_ITEMS = {
             tab1: ['Abraçadeiras', 'Mangueiras', 'Flanges', 'Canos', 'Calços', 'Coletor', 'Prisioneiros'],
-            tab2: ['Parafusos', 'Carcaça Compressora', 'Carcaça Central', 'Rotor Compressor', 'Eixo Rotor', 'Prato Compressor', 'Colar'],
+            tab2: ['Parafusos', 'Carcaça Compressora', 'Carcaça Central', 'Prato Compressor', 'Colar', 'Mancal Radial', 'Mancal de Encosto', 'Protetor Térmico', 'Espaçador'],
             tab3: ['Trincas (Parede)', 'Roscas / Prisioneiros', 'Assento da Válvula', 'Faceamento']
         };
 
@@ -1063,6 +1063,23 @@ async function collectFormData() {
             document.querySelectorAll('select[id^="status-"]').forEach(select => {
                 select.addEventListener('change', updateStatusSelectStyle);
                 updateStatusSelectStyle({ target: select });
+            });
+
+            // Inteligência de Resumo em Tempo Real (Aba 1 - Anexos Externos)
+            document.getElementById('analysis-form').addEventListener('change', () => {
+                const anexosFaltantes = [];
+                ANALYSIS_ITEMS.tab1.forEach(item => {
+                    const cleanName = item.replace(/\s+/g, '_').toLowerCase();
+                    const el = document.getElementById(`status-${cleanName}`);
+                    if (el && el.value === 'TROCAR') anexosFaltantes.push(item);
+                });
+
+                const resumo = document.getElementById('substituicao-resumo');
+                if (anexosFaltantes.length > 0) {
+                    resumo.innerHTML = `<span class="font-bold text-red-700">⚠️ VENDAS:</span> Necessário orçar: ${anexosFaltantes.join(', ')}`;
+                } else {
+                    resumo.innerText = 'Nenhuma peça crítica para substituição externa.';
+                }
             });
 
 
