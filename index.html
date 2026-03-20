@@ -133,7 +133,7 @@
                                     <option value="Padrão 8">Padrão 8</option>
                                 </select>
                             </div>
-                            <!-- Itens Adicionais Check/Status Fixos -->
+                            <!-- Itens Adicionais (Identificação pelo Analista) -->
                             <div class="col-span-3 grid grid-cols-4 gap-4">
                                 <!-- ATUADOR -->
                                 <div class="space-y-1 p-2 border rounded-lg bg-white transition-all duration-200">
@@ -655,18 +655,30 @@ function populateForm(order) {
                 const hasItem = itemData === true || (itemData && itemData.came === true);
                 const checkEl = document.getElementById(fields.check);
                 const statusEl = document.getElementById(fields.status);
+                
                 if (checkEl && statusEl) {
                     checkEl.checked = hasItem;
-                    checkEl.disabled = true;
-                    if (hasItem) {
-                        statusEl.disabled = false;
-                        statusEl.parentElement.classList.remove('opacity-40', 'bg-gray-100');
-                    } else {
-                        statusEl.value = "NÃO RECEBIDO";
-                        statusEl.disabled = true;
-                        statusEl.parentElement.classList.add('opacity-40', 'bg-gray-100');
-                    }
-                    updateStatusSelectStyle({ target: statusEl });
+                    checkEl.disabled = false; // LIBERADO: O Analista agora marca o que encontrou
+                    
+                    // Função para habilitar/desabilitar o veredito baseada no checkbox
+                    const toggleStatus = (isChecked) => {
+                        if (isChecked) {
+                            statusEl.disabled = false;
+                            statusEl.parentElement.classList.remove('opacity-40', 'grayscale');
+                            if (statusEl.value === "NÃO RECEBIDO") statusEl.value = "BOM / OK";
+                        } else {
+                            statusEl.value = "NÃO RECEBIDO";
+                            statusEl.disabled = true;
+                            statusEl.parentElement.classList.add('opacity-40', 'grayscale');
+                        }
+                        updateStatusSelectStyle(statusEl);
+                    };
+
+                    // Define estado inicial
+                    toggleStatus(hasItem);
+
+                    // Escuta a mudança manual do Analista
+                    checkEl.onchange = (e) => toggleStatus(e.target.checked);
                 }
             });
 
