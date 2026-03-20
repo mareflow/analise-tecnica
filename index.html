@@ -71,27 +71,23 @@
         </nav>
     </header>
 
-    <!-- CONTEÚDO PRINCIPAL (Layout de 3 Colunas) -->
-    <main class="flex-1 flex items-start p-6 gap-6 pt-24">
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="flex-1 flex items-start p-6 gap-6 pt-24 min-h-0">
         
-        <!-- Coluna 1: Fila de Trabalho (Fixa ao rolar) -->
-        <div class="w-1/4 max-w-xs bg-white rounded-lg shadow p-4 flex flex-col space-y-4 sticky top-24 max-h-[calc(100vh-120px)] overflow-y-auto">
-        
-        <!-- Coluna 1: Fila de Trabalho (25%) -->
-        <div class="w-1/4 max-w-xs bg-white rounded-lg shadow p-4 flex flex-col space-y-4 overflow-y-auto">
-<h2 class="text-xl font-semibold text-gray-800 mb-2 border-b pb-2">Controle de Fila</h2>
-<div class="flex space-x-1 text-[10px] font-bold mb-4">
-    <button id="tab-fila-btn" class="flex-1 py-2 rounded-t-lg border-b-2 border-brand-blue text-brand-blue bg-blue-50">
-        FILA DE ANÁLISE (<span id="count-fila">0</span>)
-    </button>
-    <button id="tab-standby-btn" class="flex-1 py-2 rounded-t-lg border-b-2 border-transparent text-gray-500 hover:bg-slate-50">
-        STANDBY / CASCO (<span id="count-standby">0</span>)
-    </button>
-</div>
+        <!-- Coluna 1: Fila de Trabalho (Fixa no topo ao rolar) -->
+        <div class="w-1/4 max-w-xs bg-white rounded-lg shadow p-4 flex flex-col space-y-4 sticky top-24 max-h-[calc(100vh-110px)] overflow-y-auto">
+            <h2 class="text-xl font-semibold text-gray-800 mb-2 border-b pb-2 uppercase tracking-tighter">Controle de Fila</h2>
+            <div class="flex space-x-1 text-[10px] font-bold mb-4">
+                <button id="tab-fila-btn" class="flex-1 py-2 rounded-t-lg border-b-2 border-brand-blue text-brand-blue bg-blue-50">
+                    FILA DE ANÁLISE (<span id="count-fila">0</span>)
+                </button>
+                <button id="tab-standby-btn" class="flex-1 py-2 rounded-t-lg border-b-2 border-transparent text-gray-500 hover:bg-slate-50">
+                    STANDBY / CASCO (<span id="count-standby">0</span>)
+                </button>
+            </div>
             
-            <!-- Fila de OSs (Renderizada pelo JS) -->
             <div id="fila-de-analise-container" class="space-y-3">
-                <p id="loading-message" class="text-gray-500 text-center mt-4">Carregando ordens...</p>
+                <p id="loading-message" class="text-gray-500 text-center mt-4 text-xs italic">Carregando...</p>
             </div>
         </div>
 
@@ -198,8 +194,8 @@
                         <button type="button" class="tab-button text-gray-500 hover:text-gray-700 font-medium" data-tab="tab3">3. Checklist do Caracol (Caixa Quente)</button>
                     </div>
 
-                    <!-- Conteúdo das Abas -->
-                    <div id="tab-content-wrapper" class="flex-grow p-6 space-y-6">
+                    <!-- Conteúdo das Abas (Expandido) -->
+                    <div id="tab-content-wrapper" class="p-6 space-y-8">
                         
                         <!-- TAB 1: Anexos (Itens Externos do Cliente) -->
                         <div id="tab1" class="tab-content space-y-4"></div>
