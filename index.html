@@ -116,7 +116,18 @@
 
                     <!-- Área Fixa: Padrão de Manutenção e Adicionais -->
                     <div class="p-6 border-b space-y-4">
-                        <h4 class="text-base font-semibold text-gray-700 mb-4">Padrão de Manutenção (1-8) / Adicionais</h4>
+                        <h4 class="text-base font-semibold text-gray-700 mb-4 uppercase tracking-tighter">Padrão de Manutenção (1-8) / Adicionais</h4>
+                        
+                        <!-- ALERTA DE INSTRUÇÃO DE USO -->
+                        <div class="bg-blue-50 border-l-4 border-blue-500 p-3 mb-6 rounded shadow-sm flex items-start space-x-3 transition-all duration-300">
+                            <svg class="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <div class="text-[11px] text-blue-900 leading-normal">
+                                <p class="font-black uppercase mb-1 tracking-wider">Instrução de Identificação:</p>
+                                Os itens abaixo iniciam desabilitados (cinza). Caso identifique o componente na turbina, marque o campo <span class="font-black text-blue-700">"Veio?"</span>. Isso habilitará o seletor para que você dê o veredito técnico (BOM ou TROCAR).
+                            </div>
+                        </div>
                         
                         <div class="grid grid-cols-4 gap-4">
                             <!-- Dropdown Padrão -->
