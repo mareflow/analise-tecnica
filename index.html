@@ -1045,19 +1045,24 @@ async function collectFormData() {
 // 1. Renderiza o formulário padrão
             renderAnalysisForm();
 
-// Gatilho: Condenar Caracol Completo (Checkbox Tab 3) - VERSÃO UNIVERSAL
+// Gatilho: Condenar Caracol Completo (Checkbox Tab 3) - VERSÃO BLINDADA
             const condemnCheck = document.getElementById('condenar-caracol-check');
             if (condemnCheck) {
                 condemnCheck.addEventListener('change', function(e) {
                     const statusTarget = e.target.checked ? 'TROCAR' : 'NÃO INFORMADO';
-                    // Pega o container da Tab 3 e todos os selects de status dentro dele
+                    
+                    // Em vez de procurar por nome, pegamos TODOS os seletores dentro da Aba 3
                     const tab3Div = document.getElementById('tab3');
                     if (tab3Div) {
-                        const selects = tab3Div.querySelectorAll('select');
-                        selects.forEach(select => {
+                        const todosOsSelects = tab3Div.querySelectorAll('select.status-select');
+                        
+                        todosOsSelects.forEach(select => {
                             select.value = statusTarget;
+                            // Chama a função de estilo para cada um ficar vermelho/cinza
                             updateStatusSelectStyle(select);
                         });
+                        
+                        console.log(`Ação Global Caracol: ${todosOsSelects.length} itens marcados como ${statusTarget}`);
                     }
                 });
             }
