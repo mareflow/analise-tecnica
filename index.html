@@ -461,11 +461,11 @@
                 'Anel Assentamento Valvula Biturbo'
             ],
             tab3: [
-                'Trinca Base Face ou Gases', 'Quebra Base Face', 'Espessura da Base Mínima 9mm', 'Embuchamento da CT', 
-                'Desgaste Saída Escape Flangeada', 'Desgaste Face Encaixe CCE', 'Trinca Face Assentamento CCE', 
+                'Trinca Base Face ou Gases', 'Quebra Base Face', 'Espessura da Base Minima 9mm', 'Embuchamento da CT', 
+                'Desgaste Saida Escape Flangeada', 'Desgaste Face Encaixe CCE', 'Trinca Face Assentamento CCE', 
                 'Trinca Parede Lateral Protetor', 'Trinca ou Quebra da Voluta', 'Borboleta ou Moeda Folga', 
-                'Bucha Guia Borboleta', 'Braço Wastegate', 'Pino de Centro', 'Assentamento Borboleta Moeda', 
-                'Coletor Anexo', 'Plaina Coletor União Biturbo', 'Empenamento Faces Alojamento', 'Necessita Gabarito Usinagem', 
+                'Bucha Guia Borboleta', 'Braco Wastegate', 'Pino de Centro', 'Assentamento Borboleta Moeda', 
+                'Coletor Anexo', 'Plaina Coletor Uniao Biturbo', 'Empenamento Faces Alojamento', 'Necessita Gabarito Usinagem', 
                 'Tipo de Solda'
             ]
         };
@@ -1045,21 +1045,19 @@ async function collectFormData() {
 // 1. Renderiza o formulário padrão
             renderAnalysisForm();
 
-            // Gatilho: Condenar Caracol Completo (Checkbox Tab 3) - ATUALIZADO
+// Gatilho: Condenar Caracol Completo (Checkbox Tab 3) - VERSÃO UNIVERSAL
             const condemnCheck = document.getElementById('condenar-caracol-check');
             if (condemnCheck) {
                 condemnCheck.addEventListener('change', function(e) {
-                    if (e.target.checked) {
-                        // Percorre automaticamente todos os itens que estão na lista da tab3
-                        ANALYSIS_ITEMS.tab3.forEach(item => {
-                            const cleanName = item.replace(/\s+/g, '_').toLowerCase();
-                            const select = document.getElementById('status-' + cleanName);
-                            if (select) {
-                                select.value = 'TROCAR';
-                                updateStatusSelectStyle(select);
-                            }
+                    const statusTarget = e.target.checked ? 'TROCAR' : 'NÃO INFORMADO';
+                    // Pega o container da Tab 3 e todos os selects de status dentro dele
+                    const tab3Div = document.getElementById('tab3');
+                    if (tab3Div) {
+                        const selects = tab3Div.querySelectorAll('select');
+                        selects.forEach(select => {
+                            select.value = statusTarget;
+                            updateStatusSelectStyle(select);
                         });
-                        console.log("CARACOL CONDENADO: Todos os itens da Aba 3 marcados para TROCAR.");
                     }
                 });
             }
