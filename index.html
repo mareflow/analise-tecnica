@@ -1045,19 +1045,21 @@ async function collectFormData() {
 // 1. Renderiza o formulário padrão
             renderAnalysisForm();
 
-            // Gatilho: Condenar Caracol Completo (Checkbox Tab 3)
+            // Gatilho: Condenar Caracol Completo (Checkbox Tab 3) - ATUALIZADO
             const condemnCheck = document.getElementById('condenar-caracol-check');
             if (condemnCheck) {
                 condemnCheck.addEventListener('change', function(e) {
                     if (e.target.checked) {
-                        const caracolItems = ['trincas_(parede)', 'roscas_/_prisioneiros', 'assento_da_válvula', 'faceamento'];
-                        caracolItems.forEach(item => {
-                            const select = document.getElementById('status-' + item);
+                        // Percorre automaticamente todos os itens que estão na lista da tab3
+                        ANALYSIS_ITEMS.tab3.forEach(item => {
+                            const cleanName = item.replace(/\s+/g, '_').toLowerCase();
+                            const select = document.getElementById('status-' + cleanName);
                             if (select) {
                                 select.value = 'TROCAR';
                                 updateStatusSelectStyle(select);
                             }
                         });
+                        console.log("CARACOL CONDENADO: Todos os itens da Aba 3 marcados para TROCAR.");
                     }
                 });
             }
