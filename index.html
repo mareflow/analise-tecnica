@@ -1346,7 +1346,6 @@ function abrirRaioX(id) {
             modalHull.classList.remove('hidden');
             modalHull.classList.add('flex');
 
-            // Configura o clique do botão interno do modal
             btnConfirm.onclick = async () => {
                 btnConfirm.disabled = true;
                 btnConfirm.textContent = "Processando...";
@@ -1355,17 +1354,24 @@ function abrirRaioX(id) {
                     const response = await fetch('https://teste.mareflow.com.br/webhook/orders/update-status', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ os_id: id, status: 'Aguardando Análise Técnica' })
+                        body: JSON.stringify({ 
+                            os_id: id, 
+                            status: 'Aguardando Análise Técnica',
+                            action: 'Casco Recebido',
+                            details: 'O técnico confirmou o recebimento do casco físico.'
+                        })
                     });
 
                     if (response.ok) {
                         modalHull.classList.add('hidden');
-                        await loadAnalysisOrders(); // Recarrega a sidebar
+                        // Força o recarregamento total para o card "pular" para a aba correta
+                        location.reload(); 
                     } else {
-                        alert("Erro no servidor ao receber casco.");
+                        alert("Erro: O servidor n8n não respondeu. Verifique se o workflow 'Atualizar Status' está ATIVO.");
                     }
                 } catch (err) {
                     console.error(err);
+                    alert("Falha de conexão. Verifique se a URL do Webhook está correta no código.");
                 } finally {
                     btnConfirm.disabled = false;
                     btnConfirm.textContent = "SIM, RECEBER";
