@@ -1339,7 +1339,7 @@ function abrirRaioX(id) {
 
         // FUNÇÃO PARA RECEBER CASCO E VOLTAR PARA A FILA DE ANÁLISE
 // FUNÇÃO PARA RECEBER CASCO (Agora com Modal TurboSul)
-        function liberarCasco(id) {
+function liberarCasco(id) {
             const modalHull = document.getElementById('hull-confirmation-modal');
             const btnConfirm = document.getElementById('confirm-hull-btn');
             
@@ -1357,6 +1357,7 @@ function abrirRaioX(id) {
                         body: JSON.stringify({ 
                             os_id: id, 
                             status: 'Aguardando Análise Técnica',
+                            trade_in_option: 'Já Recebido', // <--- ESSA LINHA RESOLVE O FILTRO
                             action: 'Casco Recebido',
                             details: 'O técnico confirmou o recebimento do casco físico.'
                         })
@@ -1364,14 +1365,12 @@ function abrirRaioX(id) {
 
                     if (response.ok) {
                         modalHull.classList.add('hidden');
-                        // Força o recarregamento total para o card "pular" para a aba correta
                         location.reload(); 
                     } else {
-                        alert("Erro: O servidor n8n não respondeu. Verifique se o workflow 'Atualizar Status' está ATIVO.");
+                        alert("Erro ao processar no n8n.");
                     }
                 } catch (err) {
                     console.error(err);
-                    alert("Falha de conexão. Verifique se a URL do Webhook está correta no código.");
                 } finally {
                     btnConfirm.disabled = false;
                     btnConfirm.textContent = "SIM, RECEBER";
