@@ -639,32 +639,27 @@ function formatMaintenanceExtras(extras) {
         }
         
         // Aplica cores dinamicamente aos dropdowns de status (CORRIGIDO PARA TROCAR/TROCAR PEÇA)
-function updateStatusSelectStyle(event) {
-            const select = event.target || event;
+function updateStatusSelectStyle(element) {
+            // Se o que veio foi um evento, pega o target. Se veio o elemento direto, usa ele.
+            const select = element.target ? element.target : element;
             if (!select || !select.classList) return;
 
-            // Limpa todas as classes de cor possíveis
-            select.classList.remove('bg-slate-400', 'bg-green-500', 'bg-red-600', 'bg-yellow-500', 'text-white', 'text-gray-800', 'bg-white', 'opacity-50', 'bg-slate-200', 'grayscale');
+            // Limpa todas as classes de cor e efeitos
+            select.classList.remove('bg-slate-400', 'bg-green-500', 'bg-red-600', 'bg-yellow-500', 'text-white', 'opacity-50', 'grayscale', 'animate-pulse');
             
             const value = select.value;
-            let bgColor = 'bg-slate-400'; // Default: Cinza (NÃO INFORMADO)
-            let textColor = 'text-white';
-
-            if (value.includes('OK')) {
-                bgColor = 'bg-green-500';
-            } else if (value.includes('RECONDICIONAR')) {
-                bgColor = 'bg-yellow-500';
-} else if (value.includes('TROCAR')) { 
-                bgColor = 'bg-red-600 animate-pulse'; // Pisca para indicar condenação da peça
-                textColor = 'text-white';
-                console.log("ITEM ROTEADO PARA TRIAGEM (ESTOQUE)");
+            
+            if (value === 'PEÇA OK' || value === 'BOM / OK' || value.includes('OK')) {
+                select.classList.add('bg-green-500', 'text-white');
+            } else if (value === 'RECONDICIONAR' || value.includes('RECONDICIONAR')) {
+                select.classList.add('bg-yellow-500', 'text-white');
+            } else if (value === 'TROCAR' || value === 'TROCAR PEÇA' || value.includes('TROCAR')) {
+                select.classList.add('bg-red-600', 'text-white');
             } else if (value === 'NÃO RECEBIDO') {
-                bgColor = 'bg-slate-200';
-                textColor = 'text-slate-500';
-                select.classList.add('opacity-50', 'grayscale');
+                select.classList.add('bg-slate-200', 'text-slate-500', 'opacity-50', 'grayscale');
+            } else {
+                select.classList.add('bg-slate-400', 'text-white'); // NÃO INFORMADO
             }
-
-            select.classList.add(bgColor, textColor);
         }
         
         // Alternar abas
@@ -1061,27 +1056,25 @@ async function collectFormData() {
 // 1. Renderiza o formulário padrão
             renderAnalysisForm();
 
-// Gatilho: Condenar Caracol Completo (Checkbox Tab 3) - VERSÃO BLINDADA
-            const condemnCheck = document.getElementById('condenar-caracol-check');
-            if (condemnCheck) {
-                condemnCheck.addEventListener('change', function(e) {
-                    const statusTarget = e.target.checked ? 'TROCAR' : 'NÃO INFORMADO';
+// Gatilho: Condenar Caracol Completo (Aba 3)
+            // Usamos delegação de evento para garantir que funcione mesmo após trocas de OS
+            document.addEventListener('change', function(e) {
+                if (e.target && e.target.id === 'condenar-caracol-check') {
+                    const isChecked = e.target.checked;
+                    const statusTarget = isChecked ? 'TROCAR' : 'NÃO INFORMADO';
                     
-                    // Em vez de procurar por nome, pegamos TODOS os seletores dentro da Aba 3
                     const tab3Div = document.getElementById('tab3');
                     if (tab3Div) {
-                        const todosOsSelects = tab3Div.querySelectorAll('select.status-select');
+                        const todosOsSelects = tab3Div.querySelectorAll('select');
                         
                         todosOsSelects.forEach(select => {
                             select.value = statusTarget;
-                            // Chama a função de estilo para cada um ficar vermelho/cinza
+                            // Força a atualização visual (cor vermelha/cinza)
                             updateStatusSelectStyle(select);
                         });
-                        
-                        console.log(`Ação Global Caracol: ${todosOsSelects.length} itens marcados como ${statusTarget}`);
                     }
-                });
-            }
+                }
+            });
 
             document.getElementById('pattern-select').addEventListener('change', function(e) {
                 const padrao = e.target.value;
