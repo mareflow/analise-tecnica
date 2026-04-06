@@ -448,8 +448,8 @@
         let activeOSId = null;
 
         // Dados estáticos para o formulário
-        const STATUS_OPTIONS_EXTERNAL = ['NÃO INFORMADO', 'PEÇA OK', 'RECONDICIONAR', 'TROCAR'];
-        const STATUS_OPTIONS_CARACOL = ['NÃO INFORMADO', 'PEÇA OK', 'RECONDICIONAR', 'TROCAR']; 
+        const STATUS_OPTIONS_EXTERNAL = ['NÃO INFORMADO', 'PEÇA OK', 'RECONDICIONAR', 'TROCAR', 'ITEM FALTANTE'];
+        const STATUS_OPTIONS_CARACOL = ['NÃO INFORMADO', 'PEÇA OK', 'RECONDICIONAR', 'TROCAR', 'ITEM FALTANTE']; 
 
         const ANALYSIS_ITEMS = {
             tab1: [
@@ -655,6 +655,8 @@ function updateStatusSelectStyle(element) {
                 select.classList.add('bg-yellow-500', 'text-white');
             } else if (value === 'TROCAR' || value === 'TROCAR PEÇA' || value.includes('TROCAR')) {
                 select.classList.add('bg-red-600', 'text-white');
+            } else if (value === 'ITEM FALTANTE') {
+                select.classList.add('bg-slate-800', 'text-white'); // Cor Cinza Escuro/Preto
             } else if (value === 'NÃO RECEBIDO') {
                 select.classList.add('bg-slate-200', 'text-slate-500', 'opacity-50', 'grayscale');
             } else {
