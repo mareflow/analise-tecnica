@@ -260,6 +260,18 @@
     </footer>
     
     <!-- MODAIS - INÍCIO -->
+
+    <!-- MODAL DE ERRO TÉCNICO (PROFISSIONAL) -->
+    <div id="error-analysis-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-[200]">
+        <div class="bg-white w-full max-w-sm rounded-[32px] p-8 text-center border-b-8 border-red-600 shadow-2xl">
+            <div class="w-20 h-20 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fa-solid fa-circle-exclamation text-3xl"></i>
+            </div>
+            <h3 class="text-2xl font-black text-slate-800 uppercase tracking-tighter mb-2">Ops! Algo deu errado</h3>
+            <p id="error-analysis-message" class="text-sm text-gray-500 font-medium leading-relaxed mb-8">Não foi possível processar a análise. Verifique sua conexão.</p>
+            <button onclick="document.getElementById('error-analysis-modal').classList.add('hidden')" class="w-full bg-slate-800 text-white font-black py-4 rounded-2xl text-xs uppercase tracking-widest hover:bg-slate-900 transition">Entendido</button>
+        </div>
+    </div>
     
     <!-- NOVO MODAL DE CONFIRMAÇÃO DE ANÁLISE -->
     <div id="analysis-confirmation-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-[100]">
@@ -933,48 +945,54 @@ async function showDetailsModalWithHistory(order) {
             return data;
         }
 
-        // Função principal para coletar todos os dados do formulário
-async function collectFormData() {
+        // Função principal para coletar todos os dados do formulário (LÓGICA UNIFICADA TURBOSUL)
+        async function collectFormData() {
+            const patternSelected = document.getElementById('pattern-select').value;
             const generalObservations = document.getElementById('observacoes-analise').value.trim();
-            const patternSelect = document.getElementById('pattern-select').value;
             
-            // TAREFA: Mapeia o que deve ir para a Triagem (itens marcados como TROCAR)
-            const allItems = [...collectChecklistData('tab1'), ...collectChecklistData('tab2'), ...collectChecklistData('tab3')];
-            const itensParaTroca = allItems.filter(item => item.status.includes('TROCAR') || item.status.includes('CONDENAR'));
+            // --- 1. LÓGICA DE TRIAGEM (Apenas o que o PADRÃO 1-8 define como troca) ---
+            const routingTriage = [];
+            if (patternSelected) {
+                const p = patternSelected;
+                // Eixo Rotor = Padrões 5, 6, 7, 8
+                if (["Padrão 5", "Padrão 6", "Padrão 7", "Padrão 8"].includes(p)) routingTriage.push("Eixo Rotor");
+                // Rotor Compressor = Padrões 3, 4, 6, 8
+                if (["Padrão 3", "Padrão 4", "Padrão 6", "Padrão 8"].includes(p)) routingTriage.push("Rotor Compressor");
+                // Carcaça de Turbina (CT) = Padrões 2, 4, 7, 8
+                if (["Padrão 2", "Padrão 4", "Padrão 7", "Padrão 8"].includes(p)) routingTriage.push("Carcaça de Turbina (CT)");
+            }
+
+            // --- 2. LÓGICA DE VENDAS (Apenas os 4 itens fixos do topo) ---
+            const maintenanceExtras = {
+                actuator: { came: document.getElementById('check-actuator').checked, status: document.getElementById('status-actuator').value },
+                geometry: { came: document.getElementById('check-geometry').checked, status: document.getElementById('status-geometry').value },
+                geometryStem: { came: document.getElementById('check-geometryStem').checked, status: document.getElementById('status-geometryStem').value },
+                geometryFlange: { came: document.getElementById('check-geometryFlange').checked, status: document.getElementById('status-geometryFlange').value },
+            };
 
             const payload = {
                 os_id: activeOSId, 
                 user_id: await getCurrentUserUID(),
-                pattern: patternSelect || null,
+                pattern: patternSelected || "Não informado",
                 general_observations: generalObservations,
                 
-                // Gavetas de dados separadas por responsabilidade
-                attachments: collectChecklistData('tab1'), // Segue para conferência de Vendas
-                general_repairs: collectChecklistData('tab2'), // Segue para Desmontagem/Oficina
-                snail_checklist: collectChecklistData('tab3'), // ROTA DIRETA: BANCADA (CARACOL)
+                // 3. Gavetas de Checklists (Para registro no histórico/banco)
+                attachments: collectChecklistData('tab1'), 
+                general_repairs: collectChecklistData('tab2'),
+                snail_checklist: collectChecklistData('tab3'),
                 
-                // Itens que precisam de verificação de ESTOQUE
-                routing_triage: itensParaTroca.map(i => i.name),
-
-                maintenance_extras: {
-                    actuator: { came: document.getElementById('check-actuator').checked, status: document.getElementById('status-actuator').value },
-                    geometry: { came: document.getElementById('check-geometry').checked, status: document.getElementById('status-geometry').value },
-                    geometryStem: { came: document.getElementById('check-geometryStem').checked, status: document.getElementById('status-geometryStem').value },
-                    geometryFlange: { came: document.getElementById('check-geometryFlange').checked, status: document.getElementById('status-geometryFlange').value },
-                }
+                // 4. Roteamentos Inteligentes (O n8n vai usar estas gavetas abaixo)
+                routing_triage: routingTriage, // Só o que o setor de Triagem vai ver
+                maintenance_extras: maintenanceExtras // Só o que o setor de Vendas vai ver
             };
 
             return payload;
         }
 
-        // Função para submeter a análise
+        // Função para submeter a análise (COM MODAL DE ERRO CUSTOMIZADO)
         async function submitAnalysis() {
-            if (!activeOSId) {
-                alert('Erro: Nenhuma Ordem de Serviço selecionada.');
-                return;
-            }
+            if (!activeOSId) return;
             
-            // Desabilita o botão para evitar cliques múltiplos
             confirmAnalysisBtn.disabled = true;
             confirmAnalysisBtn.textContent = 'Enviando...';
 
@@ -988,22 +1006,25 @@ async function collectFormData() {
                 });
                 
                 if (response.ok || response.status === 201) {
-                    // UNÍSSONO: Gera o Excel automaticamente após salvar no banco
                     gerarRelatorioExcel(payload);
                     closeAnalysisConfirmationModal();
                     showAnalysisSavedModal();
                 } else {
                     const errorBody = await response.text();
-                    alert(`Falha ao salvar a análise. Status: ${response.status}. Detalhe: ${errorBody.substring(0, 100)}...`);
+                    // EXIBE O MODAL DE ERRO EM VEZ DO ALERT
+                    document.getElementById('error-analysis-message').innerText = "Erro no servidor: " + errorBody.substring(0, 50);
+                    document.getElementById('error-analysis-modal').classList.remove('hidden');
+                    document.getElementById('error-analysis-modal').classList.add('flex');
                     closeAnalysisConfirmationModal();
                 }
 
             } catch (error) {
-                console.error("Erro ao enviar análise:", error);
-                alert(`Erro de conexão ao salvar a análise: ${error.message}`);
+                // EXIBE O MODAL DE ERRO EM VEZ DO ALERT
+                document.getElementById('error-analysis-message').innerText = "Falha de conexão. Verifique sua internet.";
+                document.getElementById('error-analysis-modal').classList.remove('hidden');
+                document.getElementById('error-analysis-modal').classList.add('flex');
                 closeAnalysisConfirmationModal();
             } finally {
-                // Restaura o botão
                 confirmAnalysisBtn.disabled = false;
                 confirmAnalysisBtn.textContent = 'Sim, Finalizar Análise';
             }
