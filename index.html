@@ -450,7 +450,7 @@
         
         // Webhooks
         const WEBHOOK_GET_ANALYSIS = 'https://webhook.mareflow.com.br/webhook/orders/analysis';
-        const WEBHOOK_SAVE_ANALYSIS = 'https://webhook.mareflow.com.br/webhook/analysis/save';
+        const WEBHOOK_SAVE_ANALYSIS = 'https://webhook.mareflow.com.br/webhook/analysis/report';
         const WEBHOOK_POST = 'https://teste.mareflow.com.br/webhook/orders/new-entry';
         const WEBHOOK_DISPATCH = 'https://teste.mareflow.com.br/webhook/orders/dispatch-to-analysis'; 
         
@@ -1006,7 +1006,13 @@ async function showDetailsModalWithHistory(order) {
                 });
                 
                 if (response.ok || response.status === 201) {
-                    gerarRelatorioExcel(payload);
+                    const result = await response.json();
+                    
+                    // Se o n8n gerou o laudo e devolveu a URL, abre em nova aba
+                    if (result.pdf_url) {
+                        window.open(result.pdf_url, '_blank');
+                    }
+
                     closeAnalysisConfirmationModal();
                     showAnalysisSavedModal();
                 } else {
