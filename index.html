@@ -299,10 +299,17 @@
             <div class="flex flex-col items-center mb-4">
                 <svg class="w-12 h-12 text-green-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 <h3 class="text-xl font-bold text-gray-800">Análise Salva!</h3>
-                <p class="text-gray-600 mt-2">Análise Concluída!<br><span class="text-blue-600 font-bold">CARACOL roteado para a BANCADA</span> e <span class="text-red-600 font-bold">Peças condenadas enviadas para TRIAGEM.</span></p>
+                <p class="text-gray-600 mt-2 mb-4 italic text-xs">As peças foram roteadas para os setores.</p>
+                
+                <!-- BOTÃO DO LAUDO (Garantia caso o pop-up bloqueie) -->
+                <div id="pdf-container-success" class="hidden w-full mb-4">
+                    <a id="btn-ver-laudo" href="#" target="_blank" class="block w-full bg-green-600 hover:bg-green-700 text-white font-black py-4 rounded-xl transition shadow-lg shadow-green-100 uppercase text-xs tracking-widest">
+                        <i class="fa-solid fa-file-pdf mr-2"></i> Abrir Laudo Técnico
+                    </a>
+                </div>
             </div>
-            <button id="analysis-saved-ok-btn" class="w-full bg-brand-blue hover:bg-brand-blue-dark text-white font-medium py-2 px-4 rounded-lg transition duration-150">
-                OK
+            <button id="analysis-saved-ok-btn" class="w-full bg-slate-800 text-white font-bold py-2 px-4 rounded-lg transition duration-150 uppercase text-[10px]">
+                OK, Continuar
             </button>
         </div>
     </div>
