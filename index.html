@@ -1008,10 +1008,13 @@ async function showDetailsModalWithHistory(order) {
                 if (response.ok || response.status === 201) {
                     const result = await response.json();
                     
-                    // Abre o PDF usando o método de link para burlar o bloqueador de pop-ups
-                    if (result.pdf_url) {
+                    // TRATAMENTO TurboSul: Aceita Array ou Objeto e os dois nomes de campo (download_url ou pdf_url)
+                    const data = Array.isArray(result) ? result[0] : result;
+                    const urlFinal = data.download_url || data.pdf_url;
+
+                    if (urlFinal) {
                         const link = document.createElement('a');
-                        link.href = result.pdf_url;
+                        link.href = urlFinal;
                         link.target = '_blank';
                         document.body.appendChild(link);
                         link.click();
