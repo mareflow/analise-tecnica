@@ -12,6 +12,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome para Ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Biblioteca Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -235,10 +237,16 @@
                                 <textarea id="observacoes-analise" rows="4" class="w-full obs-area text-sm shadow-inner" placeholder="Descreva detalhes técnicos aqui..."></textarea>
                             </div>
 
-                            <!-- Botão Finalizar -->
-                            <div class="flex justify-end pb-4">
-                                <button type="submit" class="bg-brand-blue hover:bg-brand-blue-dark text-white font-bold py-2 px-4 rounded-lg transition duration-200">
-                                    Finalizar Análise e Gerar Relatórios
+                            <!-- Área de Botões de Ação Unificados -->
+                            <div class="flex flex-col sm:flex-row justify-between items-center border-t border-gray-100 pt-6 pb-4 gap-4">
+                                <!-- Botão 1: Salvar Checklist (Amber/Laranja) -->
+                                <button type="button" id="btn-salvar-checklist" class="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-6 rounded-lg transition duration-200 uppercase text-xs tracking-wider shadow-md flex items-center justify-center">
+                                    <i class="fa-solid fa-floppy-disk mr-2"></i> 1. Salvar Checklist
+                                </button>
+
+                                <!-- Botão 2: Seguir e Gerar Relatórios (Azul, desabilitado por padrão) -->
+                                <button type="submit" id="btn-seguir-relatorios" disabled class="w-full sm:w-auto bg-gray-400 cursor-not-allowed text-white font-bold py-3 px-6 rounded-lg transition duration-200 uppercase text-xs tracking-wider shadow-md flex items-center justify-center">
+                                    2. Seguir e Gerar Relatórios
                                 </button>
                             </div>
                         </div>
@@ -279,15 +287,15 @@
             <svg class="w-12 h-12 text-yellow-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
             </svg>
-            <h3 class="text-xl font-bold text-gray-800 mb-2">Confirmar Finalização da Análise</h3>
-            <p class="text-gray-600 mb-6">Tem certeza que deseja finalizar a análise e gerar os relatórios para a Ordem de Serviço atual?</p>
+            <h3 class="text-xl font-bold text-gray-800 mb-2">Confirmar Geração de Relatórios</h3>
+            <p class="text-gray-600 mb-6">Seu checklist já foi salvo no banco. Deseja prosseguir para gerar os PDFs e relatórios finais para esta Ordem de Serviço?</p>
             
             <div class="flex justify-center space-x-3">
                 <button id="cancel-analysis-btn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2 px-4 rounded-lg transition duration-150">
                     Cancelar
                 </button>
                 <button id="confirm-analysis-btn" class="bg-brand-blue hover:bg-brand-blue-dark text-white font-medium py-2 px-4 rounded-lg transition duration-150">
-                    Sim, Finalizar Análise
+                    Sim, Gerar Relatório
                 </button>
             </div>
         </div>
@@ -465,6 +473,9 @@
         
         let currentOrders = [];
         let activeOSId = null;
+        let isChecklistSaved = false; // Controla se o checklist foi salvo na sessão atual da OS
+        let btnSalvarChecklist = null;
+        let btnSeguirRelatorios = null;
 
         // Dados estáticos para o formulário
         const STATUS_OPTIONS_EXTERNAL = ['NÃO INFORMADO', 'PEÇA OK', 'RECONDICIONAR', 'TROCAR', 'ITEM FALTANTE'];
@@ -702,6 +713,14 @@ function updateStatusSelectStyle(element) {
         // Preenche o formulário ao selecionar uma OS
 function populateForm(order) {
             activeOSId = order.id;
+            isChecklistSaved = false; // Reseta estado para a nova OS selecionada
+            
+            // Força o botão de gerar relatório a iniciar desabilitado
+            if (btnSeguirRelatorios) {
+                btnSeguirRelatorios.disabled = true;
+                btnSeguirRelatorios.className = "w-full sm:w-auto bg-gray-400 cursor-not-allowed text-white font-bold py-3 px-6 rounded-lg transition duration-200 uppercase text-xs tracking-wider shadow-md flex items-center justify-center";
+            }
+            
             const modalRaioX = document.getElementById('raiox-modal');
             if(modalRaioX) modalRaioX.classList.add('hidden');
             
@@ -1086,6 +1105,14 @@ async function showDetailsModalWithHistory(order) {
             
             loadingMessage = document.getElementById('loading-message');
             
+            // Mapeamento dos botões do fluxo de duas etapas
+            btnSalvarChecklist = document.getElementById('btn-salvar-checklist');
+            btnSeguirRelatorios = document.getElementById('btn-seguir-relatorios');
+            
+            if (btnSalvarChecklist) {
+                btnSalvarChecklist.addEventListener('click', saveChecklist);
+            }
+            
             const formElement = document.getElementById('analysis-form');
             const logoutBtn = document.getElementById('logout-button');
             const tabButtons = document.querySelectorAll('.tab-button');
@@ -1238,13 +1265,63 @@ todosOsSelects.forEach(select => {
                 });
             });
             
-            // NOVO: Listener do Form. Finalizar Análise (POST) -> Aciona o modal de confirmação
-            formElement.addEventListener('submit', async (e) => {
-                e.preventDefault();
+            // FUNÇÃO PARA PERSISTIR O CHECKLIST ANTES DE ENVIAR PARA ORÇAMENTO
+            async function saveChecklist() {
                 if (!activeOSId) {
-                    alert('Selecione uma Ordem de Serviço para finalizar a análise.');
+                    alert('Por favor, selecione uma Ordem de Serviço na fila antes de salvar.');
                     return;
                 }
+
+                btnSalvarChecklist.disabled = true;
+                btnSalvarChecklist.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin mr-2"></i> Salvando no Banco...';
+
+                try {
+                    const payload = await collectFormData();
+                    
+                    // URL do Webhook "TurboSul - Análise Técnica: Salvar"
+                    const WEBHOOK_SAVE_ONLY = 'https://webhook.mareflow.com.br/webhook/analysis/save';
+
+                    const response = await fetch(WEBHOOK_SAVE_ONLY, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok || response.status === 201) {
+                        isChecklistSaved = true;
+
+                        // Libera visualmente e logicamente o botão do Laudo PDF (Etapa 2)
+                        btnSeguirRelatorios.disabled = false;
+                        btnSeguirRelatorios.className = "w-full sm:w-auto bg-brand-blue hover:bg-brand-blue-dark text-white font-bold py-3 px-6 rounded-lg transition duration-200 uppercase text-xs tracking-wider shadow-md flex items-center justify-center cursor-pointer";
+
+                        alert('Checklist salvo com sucesso no banco de dados! A Etapa 2 de geração do Laudo foi liberada.');
+                    } else {
+                        const errorBody = await response.text();
+                        alert('Falha ao persistir checklist: ' + errorBody.substring(0, 100));
+                    }
+                } catch (error) {
+                    console.error("Erro na persistência do checklist:", error);
+                    alert('Erro de conexão ao salvar dados. Verifique o seu n8n.');
+                } finally {
+                    btnSalvarChecklist.disabled = false;
+                    btnSalvarChecklist.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> 1. Salvar Checklist';
+                }
+            }
+
+            // Validação de envio do formulário de geração final do laudo
+            formElement.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                if (!activeOSId) {
+                    alert('Selecione uma Ordem de Serviço para prosseguir.');
+                    return;
+                }
+                
+                if (!isChecklistSaved) {
+                    alert('Atenção: Você precisa clicar em "1. Salvar Checklist" e receber a confirmação de sucesso antes de gerar os relatórios.');
+                    return;
+                }
+
                 showAnalysisConfirmationModal();
             });
 
