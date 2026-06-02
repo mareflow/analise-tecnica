@@ -157,7 +157,7 @@
                                     </div>
                                     <select id="status-actuator" onchange="updateStatusSelectStyle(this)" class="w-full px-2 py-1 text-xs border rounded-lg font-bold">
                                         <option value="BOM / OK">BOM / OK</option>
-                                        <option value="TROCAR PEÇA">TROCAR PEÇA</option>
+                                        <option value="TROCAR">TROCAR</option>
                                     </select>
                                 </div>
                                 <!-- GEOMETRIA VARIÁVEL -->
@@ -169,7 +169,7 @@
                                     </div>
                                     <select id="status-geometry" onchange="updateStatusSelectStyle(this)" class="w-full px-2 py-1 text-xs border rounded-lg font-bold">
                                         <option value="BOM / OK">BOM / OK</option>
-                                        <option value="TROCAR PEÇA">TROCAR PEÇA</option>
+                                        <option value="TROCAR">TROCAR</option>
                                     </select>
                                 </div>
                                 <!-- CANOTE DA GEOMETRIA -->
@@ -181,7 +181,7 @@
                                     </div>
                                     <select id="status-geometryStem" onchange="updateStatusSelectStyle(this)" class="w-full px-2 py-1 text-xs border rounded-lg font-bold">
                                         <option value="BOM / OK">BOM / OK</option>
-                                        <option value="TROCAR PEÇA">TROCAR PEÇA</option>
+                                        <option value="TROCAR">TROCAR</option>
                                     </select>
                                 </div>
                                 <!-- FLANGE DA GEOMETRIA -->
@@ -193,7 +193,7 @@
                                     </div>
                                     <select id="status-geometryFlange" onchange="updateStatusSelectStyle(this)" class="w-full px-2 py-1 text-xs border rounded-lg font-bold">
                                         <option value="BOM / OK">BOM / OK</option>
-                                        <option value="TROCAR PEÇA">TROCAR PEÇA</option>
+                                        <option value="TROCAR">TROCAR</option>
                                     </select>
                                 </div>
                             </div>
@@ -1213,10 +1213,10 @@ todosOsSelects.forEach(select => {
                     });
                 });
 
-                // 3. Verifica Adicionais do Topo (Tradução corrigida aqui)
+                // 3. Verifica Adicionais do Topo
                 ['actuator', 'geometry', 'geometryStem', 'geometryFlange'].forEach(id => {
                     const el = document.getElementById(`status-${id}`);
-                    if (el && !el.disabled && el.value === 'TROCAR PEÇA') {
+                    if (el && !el.disabled && el.value === 'TROCAR') {
                         trocasInternas.push(labelsTopo[id]);
                     }
                 });
