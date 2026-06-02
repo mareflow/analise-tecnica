@@ -729,7 +729,7 @@
             document.querySelector(`[data-tab="${tabId}"]`).classList.remove('text-gray-500', 'hover:text-gray-700');
         }
 
-        // RENDERIZA O RESUMO DO CHECKLIST EM MODO LEITURA (Mapeamento adequado de propriedades de banco)
+        // RENDERIZA O RESUMO DO CHECKLIST EM MODO LEITURA (Dividindo por seções visuais limpas)
         function renderChecklistSummary(checklistData) {
             const list = document.getElementById('checklist-summary-list');
             if (!list) return;
@@ -739,7 +739,36 @@
                 return;
             }
 
-            list.innerHTML = checklistData.map(item => {
+            // Listas de chaves estruturadas para realizar a separação
+            const coreComponentNames = [
+                "EIXO", "ROTOR", "CARCAÇA DE TURBINA", "CT", 
+                "CARCAÇA COMPRESSORA", "CCO", "CARCAÇA CENTRAL", "CCE"
+            ];
+            
+            const accessoryNames = [
+                "ATUADOR", "GEOMETRIA VARIÁVEL", "CANOTE DA GEOMETRIA", "FLANGE DA GEOMETRIA"
+            ];
+
+            const coreGroup = [];
+            const accessoriesGroup = [];
+            const generalChecklistGroup = [];
+
+            // Classifica cada item em seu respectivo container visual
+            checklistData.forEach(item => {
+                const displayName = item.item_name || item.name || "";
+                const nameUpper = displayName.toUpperCase().trim();
+
+                if (coreComponentNames.includes(nameUpper)) {
+                    coreGroup.push(item);
+                } else if (accessoryNames.includes(nameUpper)) {
+                    accessoriesGroup.push(item);
+                } else {
+                    generalChecklistGroup.push(item);
+                }
+            });
+
+            // Estruturação do cartão interno padrão
+            const renderItemCard = (item) => {
                 const displayName = item.item_name || item.name || "Item não identificado";
                 const status = item.veredito_tecnico || item.status || "NÃO INFORMADO";
                 const displayObs = item.observation || item.obs || "";
@@ -756,14 +785,62 @@
                 }
 
                 return `
-                    <div class="flex items-center justify-between p-3.5 bg-white border border-slate-100 rounded-2xl shadow-sm">
+                    <div class="flex items-center justify-between p-3.5 bg-white border border-slate-100 rounded-xl shadow-sm">
                         <span class="font-extrabold text-slate-700 uppercase text-[11px] tracking-tight">${displayName}</span>
                         <div class="flex items-center space-x-3">
                             <span class="px-3 py-1 rounded-lg text-[9px] font-black uppercase ${badgeColor} tracking-wider">${status}</span>
                             ${displayObs ? `<span class="text-[10px] text-gray-400 italic max-w-[150px] truncate" title="${displayObs}">Obs: "${displayObs}"</span>` : ''}
                         </div>
                     </div>`;
-            }).join('');
+            };
+
+            let finalHtml = "";
+
+            // Seção 1: Núcleo do Turbocompressor (Eixo, Rotor, etc.)
+            if (coreGroup.length > 0) {
+                finalHtml += `
+                    <div class="w-full mb-2">
+                        <h5 class="text-xs font-black text-blue-600 uppercase tracking-widest mb-3 flex items-center border-b pb-2">
+                            <i class="fa-solid fa-gears mr-2 text-sm"></i> 1. Componentes do Núcleo (Padrão de Manutenção)
+                        </h5>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            ${coreGroup.map(renderItemCard).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Seção 2: Acessórios e Comando (Atuadores e Geometrias)
+            if (accessoriesGroup.length > 0) {
+                finalHtml += `
+                    <div class="w-full mb-2 pt-2">
+                        <h5 class="text-xs font-black text-indigo-600 uppercase tracking-widest mb-3 flex items-center border-b pb-2">
+                            <i class="fa-solid fa-sliders mr-2 text-sm"></i> 2. Acessórios e Comando (Identificação)
+                        </h5>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            ${accessoriesGroup.map(renderItemCard).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Seção 3: Detalhamento Técnico Geral
+            if (generalChecklistGroup.length > 0) {
+                finalHtml += `
+                    <div class="w-full pt-2">
+                        <h5 class="text-xs font-black text-slate-600 uppercase tracking-widest mb-3 flex items-center border-b pb-2">
+                            <i class="fa-solid fa-list-check mr-2 text-sm"></i> 3. Itens do Checklist Técnico (Inspeção Geral)
+                        </h5>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            ${generalChecklistGroup.map(renderItemCard).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Altera dinamicamente o layout do container para flex flex-col para comportar as seções independentes
+            list.className = "flex flex-col space-y-6 text-xs w-full";
+            list.innerHTML = finalHtml;
         }
 
         // Atualiza as caixas inferiores de substituição/serviços dinamicamente baseando-se no preenchimento manual do formulário
