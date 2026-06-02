@@ -477,6 +477,10 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <!-- Lógica de Frontend com JavaScript Puro (Vanilla JS) -->
+    <!-- Inclusão da biblioteca do Supabase via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Lógica de Frontend com JavaScript Puro (Vanilla JS) -->
     <script>
         // ====================================================================
         // 1. CONFIGURAÇÃO E DADOS
@@ -570,7 +574,7 @@
 
 
         // ====================================================================
-        // 2. FUNÇÕES AUXILIARES E DE CONTROLE
+        // 2. FUNÇÕES AUXILIARES E DE CONTROLE (ESCOPO GLOBAL)
         // ====================================================================
 
         async function getCurrentUserUID() { 
@@ -725,11 +729,152 @@
             document.querySelector(`[data-tab="${tabId}"]`).classList.remove('text-gray-500', 'hover:text-gray-700');
         }
 
-        // Preenche o formulário ao selecionar uma OS (Com detecção de checklist salvo)
+        // RENDERIZA O RESUMO DO CHECKLIST EM MODO LEITURA (Mapeamento adequado de propriedades de banco)
+        function renderChecklistSummary(checklistData) {
+            const list = document.getElementById('checklist-summary-list');
+            if (!list) return;
+            
+            if (!checklistData || checklistData.length === 0) {
+                list.innerHTML = `<p class="text-gray-400 italic">Nenhum detalhe técnico foi respondido no checklist.</p>`;
+                return;
+            }
+
+            list.innerHTML = checklistData.map(item => {
+                const displayName = item.item_name || item.name || "Item não identificado";
+                const status = item.veredito_tecnico || item.status || "NÃO INFORMADO";
+                const displayObs = item.observation || item.obs || "";
+
+                let badgeColor = "bg-slate-100 text-slate-700";
+                if (status === 'PEÇA OK' || status === 'BOM / OK' || status.includes('OK')) {
+                    badgeColor = "bg-green-500 text-white";
+                } else if (status === 'RECONDICIONAR' || status.includes('RECONDICIONAR')) {
+                    badgeColor = "bg-yellow-500 text-white";
+                } else if (status === 'TROCAR' || status === 'TROCAR PEÇA' || status.includes('TROCAR')) {
+                    badgeColor = "bg-red-600 text-white";
+                } else if (status === 'ITEM FALTANTE') {
+                    badgeColor = "bg-slate-800 text-white";
+                }
+
+                return `
+                    <div class="flex items-center justify-between p-3.5 bg-white border border-slate-100 rounded-2xl shadow-sm">
+                        <span class="font-extrabold text-slate-700 uppercase text-[11px] tracking-tight">${displayName}</span>
+                        <div class="flex items-center space-x-3">
+                            <span class="px-3 py-1 rounded-lg text-[9px] font-black uppercase ${badgeColor} tracking-wider">${status}</span>
+                            ${displayObs ? `<span class="text-[10px] text-gray-400 italic max-w-[150px] truncate" title="${displayObs}">Obs: "${displayObs}"</span>` : ''}
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        // Atualiza as caixas inferiores de substituição/serviços dinamicamente baseando-se no preenchimento manual do formulário
+        function atualizarResumoGeral() {
+            const trocasExternas = [];
+            const trocasInternas = [];
+            const servicos = [];
+
+            const labelsTopo = {
+                'actuator': 'Atuador',
+                'geometry': 'Geometria Variável',
+                'geometryStem': 'Canote da Geometria',
+                'geometryFlange': 'Flange da Geometria'
+            };
+
+            Object.keys(ANALYSIS_ITEMS).forEach(tab => {
+                ANALYSIS_ITEMS[tab].forEach(item => {
+                    const cleanName = item.replace(/\s+/g, '_').toLowerCase();
+                    const el = document.getElementById(`status-${cleanName}`);
+                    if (el) {
+                        if (el.value === 'TROCAR') {
+                            if (tab === 'tab1') trocasExternas.push(item);
+                            else trocasInternas.push(item);
+                        } else if (el.value === 'RECONDICIONAR') {
+                            servicos.push(item);
+                        }
+                    }
+                });
+            });
+
+            ['actuator', 'geometry', 'geometryStem', 'geometryFlange'].forEach(id => {
+                const el = document.getElementById(`status-${id}`);
+                if (el && !el.disabled && el.value === 'TROCAR') {
+                    trocasInternas.push(labelsTopo[id]);
+                }
+            });
+
+            const resumoPecas = document.getElementById('substituicao-resumo');
+            const resumoServicos = document.getElementById('servicos-resumo');
+
+            if (resumoPecas) {
+                if (trocasExternas.length > 0 || trocasInternas.length > 0) {
+                    const totalPecas = [...trocasExternas, ...trocasInternas];
+                    resumoPecas.innerHTML = `<span class="font-black text-red-700 uppercase">SUBSTITUIÇÃO:</span> ${totalPecas.join(', ')}`;
+                } else {
+                    resumoPecas.innerText = 'Nenhuma peça para substituição.';
+                }
+            }
+
+            if (resumoServicos) {
+                if (servicos.length > 0) {
+                    resumoServicos.innerHTML = `<span class="font-black text-yellow-700 uppercase">USINAGEM/SERVIÇOS:</span> ${servicos.join(', ')}`;
+                } else {
+                    resumoServicos.innerText = 'Nenhum serviço de usinagem selecionado.';
+                }
+            }
+        }
+
+        // Atualiza as caixas inferiores de substituição/serviços de forma dinâmica quando um checklist existente é carregado do Supabase
+        function atualizarResumoComDadosCarregados(checklistData) {
+            const trocasExternas = [];
+            const trocasInternas = [];
+            const servicos = [];
+
+            checklistData.forEach(item => {
+                const displayName = item.item_name || item.name || "";
+                const status = item.veredito_tecnico || item.status || "";
+
+                if (status === 'TROCAR') {
+                    if (ANALYSIS_ITEMS.tab1.includes(displayName)) {
+                        trocasExternas.push(displayName);
+                    } else {
+                        trocasInternas.push(displayName);
+                    }
+                } else if (status === 'RECONDICIONAR') {
+                    servicos.push(displayName);
+                }
+            });
+
+            const resumoPecas = document.getElementById('substituicao-resumo');
+            const resumoServicos = document.getElementById('servicos-resumo');
+
+            if (resumoPecas) {
+                if (trocasExternas.length > 0 || trocasInternas.length > 0) {
+                    const totalPecas = [...trocasExternas, ...trocasInternas];
+                    resumoPecas.innerHTML = `<span class="font-black text-red-700 uppercase">SUBSTITUIÇÃO:</span> ${totalPecas.join(', ')}`;
+                } else {
+                    resumoPecas.innerText = 'Nenhuma peça para substituição.';
+                }
+            }
+
+            if (resumoServicos) {
+                if (servicos.length > 0) {
+                    resumoServicos.innerHTML = `<span class="font-black text-yellow-700 uppercase">USINAGEM/SERVIÇOS:</span> ${servicos.join(', ')}`;
+                } else {
+                    resumoServicos.innerText = 'Nenhum serviço de usinagem selecionado.';
+                }
+            }
+        }
+
+        // Preenche o formulário ao selecionar uma OS (Com detecção e recuperação do checklist salvo)
         async function populateForm(order) {
             activeOSId = order.id;
             isChecklistSaved = false; // Reseta estado local por padrão
             
+            // Atribui e exibe a observação geral salva da OS no campo textarea
+            const obsAnalise = document.getElementById('observacoes-analise');
+            if (obsAnalise) {
+                obsAnalise.value = order.observation || '';
+            }
+
             // Força o botão de gerar relatório a iniciar desabilitado por padrão
             if (btnSeguirRelatorios) {
                 btnSeguirRelatorios.disabled = true;
@@ -771,9 +916,15 @@
                     if (summaryContainer) {
                         summaryContainer.classList.remove('hidden');
                         renderChecklistSummary(existingChecklist);
+                        atualizarResumoComDadosCarregados(existingChecklist);
                     }
+                } else {
+                    atualizarResumoGeral();
                 }
-            } catch (err) { console.error("Erro ao verificar checklist existente:", err); }
+            } catch (err) { 
+                console.error("Erro ao verificar checklist existente:", err); 
+                atualizarResumoGeral();
+            }
             
             const modalRaioX = document.getElementById('raiox-modal');
             if(modalRaioX) modalRaioX.classList.add('hidden');
@@ -821,7 +972,10 @@
 
                     toggleStatus(hasItem);
 
-                    checkEl.onchange = (e) => toggleStatus(e.target.checked);
+                    checkEl.onchange = (e) => {
+                        toggleStatus(e.target.checked);
+                        atualizarResumoGeral();
+                    };
                 }
             });
 
@@ -1087,6 +1241,67 @@
             }
         }
 
+        // FUNÇÃO PARA PERSISTIR O CHECKLIST ANTES DE ENVIAR PARA ORÇAMENTO
+        async function saveChecklist() {
+            if (!activeOSId) {
+                alert('Por favor, selecione uma Ordem de Serviço na fila antes de salvar.');
+                return;
+            }
+
+            btnSalvarChecklist.disabled = true;
+            btnSalvarChecklist.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin mr-2"></i> Salvando no Banco...';
+
+            try {
+                const payload = await collectFormData();
+                
+                const WEBHOOK_SAVE_ONLY = 'https://webhook.mareflow.com.br/webhook/analysis/save';
+
+                const response = await fetch(WEBHOOK_SAVE_ONLY, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok || response.status === 201) {
+                    isChecklistSaved = true;
+
+                    const inputContainer = document.getElementById('checklist-inputs-container');
+                    const summaryContainer = document.getElementById('checklist-summary-container');
+                    if (inputContainer) inputContainer.classList.add('hidden');
+                    if (summaryContainer) {
+                        summaryContainer.classList.remove('hidden');
+                        
+                        const itemsToRender = payload.checklistAttachments || [
+                            ...(payload.attachments || []),
+                            ...(payload.general_repairs || []),
+                            ...(payload.snail_checklist || [])
+                        ];
+                        renderChecklistSummary(itemsToRender);
+                        atualizarResumoComDadosCarregados(itemsToRender);
+                    }
+
+                    btnSalvarChecklist.disabled = true;
+                    btnSalvarChecklist.className = "bg-green-600 text-white font-bold py-3 px-8 rounded-lg cursor-not-allowed shadow-md flex items-center justify-center opacity-90";
+                    btnSalvarChecklist.innerHTML = '<i class="fa-solid fa-circle-check mr-2"></i> Checklist Salvo!';
+
+                    btnSeguirRelatorios.disabled = false;
+                    btnSeguirRelatorios.className = "w-full sm:w-auto bg-brand-blue hover:bg-brand-blue-dark text-white font-bold py-3 px-6 rounded-lg transition duration-200 uppercase text-xs tracking-wider shadow-md flex items-center justify-center cursor-pointer";
+
+                    alert('Checklist salvo com sucesso no banco de dados! A Etapa 2 de geração do Laudo foi liberada.');
+                } else {
+                    const errorBody = await response.text();
+                    alert('Falha ao persistir checklist: ' + errorBody.substring(0, 100));
+                    btnSalvarChecklist.disabled = false;
+                    btnSalvarChecklist.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> 1. Salvar Checklist';
+                }
+            } catch (error) {
+                console.error("Erro na persistência do checklist:", error);
+                alert('Erro de conexão ao salvar dados. Verifique o seu n8n.');
+                btnSalvarChecklist.disabled = false;
+                btnSalvarChecklist.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> 1. Salvar Checklist';
+            }
+        }
+
         // ====================================================================
         // 4. INICIALIZAÇÃO DOS LISTENERS
         // ====================================================================
@@ -1171,6 +1386,7 @@
                             updateStatusSelectStyle(el);
                         }
                     });
+                    atualizarResumoGeral();
                 }
             });
             
@@ -1183,57 +1399,6 @@
                 select.addEventListener('change', updateStatusSelectStyle);
                 updateStatusSelectStyle({ target: select });
             });
-
-            function atualizarResumoGeral() {
-                const trocasExternas = [];
-                const trocasInternas = [];
-                const servicos = [];
-
-                const labelsTopo = {
-                    'actuator': 'Atuador',
-                    'geometry': 'Geometria Variável',
-                    'geometryStem': 'Canote da Geometria',
-                    'geometryFlange': 'Flange da Geometria'
-                };
-
-                Object.keys(ANALYSIS_ITEMS).forEach(tab => {
-                    ANALYSIS_ITEMS[tab].forEach(item => {
-                        const cleanName = item.replace(/\s+/g, '_').toLowerCase();
-                        const el = document.getElementById(`status-${cleanName}`);
-                        if (el) {
-                            if (el.value === 'TROCAR') {
-                                if (tab === 'tab1') trocasExternas.push(item);
-                                else trocasInternas.push(item);
-                            } else if (el.value === 'RECONDICIONAR') {
-                                servicos.push(item);
-                            }
-                        }
-                    });
-                });
-
-                ['actuator', 'geometry', 'geometryStem', 'geometryFlange'].forEach(id => {
-                    const el = document.getElementById(`status-${id}`);
-                    if (el && !el.disabled && el.value === 'TROCAR') {
-                        trocasInternas.push(labelsTopo[id]);
-                    }
-                });
-
-                const resumoPecas = document.getElementById('substituicao-resumo');
-                const resumoServicos = document.getElementById('servicos-resumo');
-
-                if (trocasExternas.length > 0 || trocasInternas.length > 0) {
-                    const totalPecas = [...trocasExternas, ...trocasInternas];
-                    resumoPecas.innerHTML = `<span class="font-black text-red-700 uppercase">SUBSTITUIÇÃO:</span> ${totalPecas.join(', ')}`;
-                } else {
-                    resumoPecas.innerText = 'Nenhuma peça para substituição.';
-                }
-
-                if (servicos.length > 0) {
-                    resumoServicos.innerHTML = `<span class="font-black text-yellow-700 uppercase">USINAGEM/SERVIÇOS:</span> ${servicos.join(', ')}`;
-                } else {
-                    resumoServicos.innerText = 'Nenhum serviço de usinagem selecionado.';
-                }
-            }
 
             document.getElementById('analysis-form').addEventListener('change', atualizarResumoGeral);
 
@@ -1256,96 +1421,6 @@
                     switchTab(e.target.dataset.tab);
                 });
             });
-
-            // FUNÇÃO PARA RENDERIZAR O RESUMO DO CHECKLIST EM MODO LEITURA (ESTÁTICO GERAL)
-            function renderChecklistSummary(checklistData) {
-                const list = document.getElementById('checklist-summary-list');
-                if (!list) return;
-                
-                if (!checklistData || checklistData.length === 0) {
-                    list.innerHTML = `<p class="text-gray-400 italic">Nenhum detalhe técnico foi respondido no checklist.</p>`;
-                    return;
-                }
-
-                list.innerHTML = checklistData.map(item => {
-                    let badgeColor = "bg-slate-100 text-slate-700";
-                    if (item.status === 'PEÇA OK') badgeColor = "bg-green-500 text-white";
-                    if (item.status === 'RECONDICIONAR') badgeColor = "bg-yellow-500 text-white";
-                    if (item.status === 'TROCAR') badgeColor = "bg-red-600 text-white";
-
-                    const displayName = item.item_name || item.name || "Item não identificado";
-                    const displayObs = item.observation || item.obs || "";
-
-                    return `
-                        <div class="flex items-center justify-between p-3.5 bg-white border border-slate-100 rounded-2xl shadow-sm">
-                            <span class="font-extrabold text-slate-700 uppercase text-[11px] tracking-tight">${displayName}</span>
-                            <div class="flex items-center space-x-3">
-                                <span class="px-3 py-1 rounded-lg text-[9px] font-black uppercase ${badgeColor} tracking-wider">${item.status}</span>
-                                ${displayObs ? `<span class="text-[10px] text-gray-400 italic max-w-[150px] truncate">Obs: "${displayObs}"</span>` : ''}
-                            </div>
-                        </div>`;
-                }).join('');
-            }
-
-            // FUNÇÃO PARA PERSISTIR O CHECKLIST ANTES DE ENVIAR PARA ORÇAMENTO
-            async function saveChecklist() {
-                if (!activeOSId) {
-                    alert('Por favor, selecione uma Ordem de Serviço na fila antes de salvar.');
-                    return;
-                }
-
-                btnSalvarChecklist.disabled = true;
-                btnSalvarChecklist.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin mr-2"></i> Salvando no Banco...';
-
-                try {
-                    const payload = await collectFormData();
-                    
-                    const WEBHOOK_SAVE_ONLY = 'https://webhook.mareflow.com.br/webhook/analysis/save';
-
-                    const response = await fetch(WEBHOOK_SAVE_ONLY, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    if (response.ok || response.status === 201) {
-                        isChecklistSaved = true;
-
-                        const inputContainer = document.getElementById('checklist-inputs-container');
-                        const summaryContainer = document.getElementById('checklist-summary-container');
-                        if (inputContainer) inputContainer.classList.add('hidden');
-                        if (summaryContainer) {
-                            summaryContainer.classList.remove('hidden');
-                            
-                            const itemsToRender = payload.checklistAttachments || [
-                                ...(payload.attachments || []),
-                                ...(payload.general_repairs || []),
-                                ...(payload.snail_checklist || [])
-                            ];
-                            renderChecklistSummary(itemsToRender);
-                        }
-
-                        btnSalvarChecklist.disabled = true;
-                        btnSalvarChecklist.className = "bg-green-600 text-white font-bold py-3 px-8 rounded-lg cursor-not-allowed shadow-md flex items-center justify-center opacity-90";
-                        btnSalvarChecklist.innerHTML = '<i class="fa-solid fa-circle-check mr-2"></i> Checklist Salvo!';
-
-                        btnSeguirRelatorios.disabled = false;
-                        btnSeguirRelatorios.className = "w-full sm:w-auto bg-brand-blue hover:bg-brand-blue-dark text-white font-bold py-3 px-6 rounded-lg transition duration-200 uppercase text-xs tracking-wider shadow-md flex items-center justify-center cursor-pointer";
-
-                        alert('Checklist salvo com sucesso no banco de dados! A Etapa 2 de geração do Laudo foi liberada.');
-                    } else {
-                        const errorBody = await response.text();
-                        alert('Falha ao persistir checklist: ' + errorBody.substring(0, 100));
-                        btnSalvarChecklist.disabled = false;
-                        btnSalvarChecklist.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> 1. Salvar Checklist';
-                    }
-                } catch (error) {
-                    console.error("Erro na persistência do checklist:", error);
-                    alert('Erro de conexão ao salvar dados. Verifique o seu n8n.');
-                    btnSalvarChecklist.disabled = false;
-                    btnSalvarChecklist.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> 1. Salvar Checklist';
-                }
-            }
 
             formElement.addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -1598,6 +1673,6 @@
             const fileName = `Analise_${payload.os_id}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.xlsx`;
             XLSX.writeFile(wb, fileName);
         }
-</script>
+    </script>
 </body>
 </html>
