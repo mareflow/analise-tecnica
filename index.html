@@ -713,11 +713,12 @@ function updateStatusSelectStyle(element) {
         }
 
         // Preenche o formulário ao selecionar uma OS
-function populateForm(order) {
+// Preenche o formulário ao selecionar uma OS (Com detecção de checklist salvo)
+async function populateForm(order) {
             activeOSId = order.id;
-            isChecklistSaved = false; // Reseta estado para a nova OS selecionada
+            isChecklistSaved = false; // Reseta estado local por padrão
             
-            // Força o botão de gerar relatório a iniciar desabilitado
+            // Força o botão de gerar relatório a iniciar desabilitado por padrão
             if (btnSeguirRelatorios) {
                 btnSeguirRelatorios.disabled = true;
                 btnSeguirRelatorios.className = "w-full sm:w-auto bg-gray-400 cursor-not-allowed text-white font-bold py-3 px-6 rounded-lg transition duration-200 uppercase text-xs tracking-wider shadow-md flex items-center justify-center";
@@ -729,6 +730,24 @@ function populateForm(order) {
                 btnSalvarChecklist.className = "bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-8 rounded-lg transition duration-200 uppercase text-xs tracking-wider shadow-md flex items-center justify-center";
                 btnSalvarChecklist.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> 1. Salvar Checklist';
             }
+
+            // 🌟 PERSISTÊNCIA: Busca direta no Supabase para verificar se essa OS já tem checklist gravado
+            try {
+                const { data: existingChecklist, error } = await supabaseClient
+                    .from('checklist_analysis_general')
+                    .select('id')
+                    .eq('service_order_id', order.id)
+                    .limit(1);
+
+                if (!error && existingChecklist && existingChecklist.length > 0) {
+                    isChecklistSaved = true;
+                    // Habilita a Etapa 2 de geração do laudo imediatamente se já houver dados no banco
+                    if (btnSeguirRelatorios) {
+                        btnSeguirRelatorios.disabled = false;
+                        btnSeguirRelatorios.className = "w-full sm:w-auto bg-brand-blue hover:bg-brand-blue-dark text-white font-bold py-3 px-6 rounded-lg transition duration-200 uppercase text-xs tracking-wider shadow-md flex items-center justify-center cursor-pointer";
+                    }
+                }
+            } catch (err) { console.error("Erro ao verificar checklist existente:", err); }
             
             const modalRaioX = document.getElementById('raiox-modal');
             if(modalRaioX) modalRaioX.classList.add('hidden');
