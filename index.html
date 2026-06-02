@@ -200,31 +200,42 @@
                         </div>
                     </div>
 
-                    <!-- Abas de Navegação -->
-                    <div class="p-4 border-b flex space-x-8">
-                        <button type="button" class="tab-button text-brand-blue border-b-2 border-brand-blue font-semibold" data-tab="tab1">1. Anexos (Itens Externos do Cliente)</button>
-                        <button type="button" class="tab-button text-gray-500 hover:text-gray-700 font-medium" data-tab="tab2">2. Reparos Gerais (Interno)</button>
-                        <button type="button" class="tab-button text-gray-500 hover:text-gray-700 font-medium" data-tab="tab3">3. Checklist do Caracol (Caixa Quente)</button>
-                    </div>
-
-                    <!-- Conteúdo das Abas (Expandido) -->
-                    <div id="tab-content-wrapper" class="p-6 space-y-8">
+                    <!-- CONTEÚDO DA CONFERÊNCIA TÉCNICA (Abas + Resumo) -->
+                    <div id="panel-conferencia-tecnica" class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden mt-4">
                         
-                        <!-- TAB 1: Anexos (Itens Externos do Cliente) -->
-                        <div id="tab1" class="tab-content space-y-4"></div>
+                        <!-- Painel de Inputs (Abas de Preenchimento) -->
+                        <div id="checklist-inputs-container">
+                            <!-- Abas de Navegação -->
+                            <div class="p-4 border-b flex space-x-8 bg-slate-50 overflow-x-auto">
+                                <button type="button" class="tab-button text-brand-blue border-b-2 border-brand-blue font-semibold" data-tab="tab1">1. Anexos (Itens Externos do Cliente)</button>
+                                <button type="button" class="tab-button text-gray-500 hover:text-gray-700 font-medium" data-tab="tab2">2. Reparos Gerais (Interno)</button>
+                                <button type="button" class="tab-button text-gray-500 hover:text-gray-700 font-medium" data-tab="tab3">3. Checklist do Caracol (Caixa Quente)</button>
+                            </div>
 
-                        <!-- TAB 2: Reparos Gerais (Interno) -->
-                        <div id="tab2" class="tab-content hidden space-y-4"></div>
-                        
-                        <!-- TAB 3: Checklist do Caracol (Caixa Quente) -->
-                        <div id="tab3" class="tab-content hidden space-y-4"></div>
+                            <!-- Conteúdo das Abas (Expandido) -->
+                            <div id="tab-content-wrapper" class="p-6 space-y-8">
+                                <!-- TAB 1: Anexos (Itens Externos do Cliente) -->
+                                <div id="tab1" class="tab-content space-y-4"></div>
 
-                        <!-- Botão 1: Salvar Checklist posicionado logo abaixo do checklist ativo, alinhado à direita -->
-                        <div class="flex justify-end pt-4 pr-1">
-                            <button type="button" id="btn-salvar-checklist" class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-8 rounded-lg transition duration-200 uppercase text-xs tracking-wider shadow-md flex items-center justify-center">
-                                <i class="fa-solid fa-floppy-disk mr-2"></i> 1. Salvar Checklist
-                            </button>
+                                <!-- TAB 2: Reparos Gerais (Interno) -->
+                                <div id="tab2" class="tab-content hidden space-y-4"></div>
+                                
+                                <!-- TAB 3: Checklist do Caracol (Caixa Quente) -->
+                                <div id="tab3" class="tab-content hidden space-y-4"></div>
+
+                                <!-- Botão 1: Salvar Checklist posicionado logo abaixo do checklist ativo, alinhado à direita -->
+                                <div class="flex justify-end pt-4 pr-1">
+                                    <button type="button" id="btn-salvar-checklist" class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-8 rounded-lg transition duration-200 uppercase text-xs tracking-wider shadow-md flex items-center justify-center">
+                                        <i class="fa-solid fa-floppy-disk mr-2"></i> 1. Salvar Checklist
+                                    </button>
+                                </div>
+                            </div>
                         </div>
+
+                        <!-- Painel de Resumo Estático (Oculto por padrão, visível após salvar) -->
+                        <div id="checklist-summary-container" class="hidden p-6 bg-slate-50/50">
+                            <div class="flex justify-between items-center mb-4">
+                                <h4 class="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center">
                         
                         <!-- Área de Resumo Final (Fim da Página) -->
                         <div class="bg-white pt-10 border-t mt-10 pb-10">
@@ -714,6 +725,7 @@ function updateStatusSelectStyle(element) {
 
         // Preenche o formulário ao selecionar uma OS
 // Preenche o formulário ao selecionar uma OS (Com detecção de checklist salvo)
+// Preenche o formulário ao selecionar uma OS (Com detecção de checklist salvo)
 async function populateForm(order) {
             activeOSId = order.id;
             isChecklistSaved = false; // Reseta estado local por padrão
@@ -731,20 +743,34 @@ async function populateForm(order) {
                 btnSalvarChecklist.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> 1. Salvar Checklist';
             }
 
+            // Resetador do contêiner de inputs e resumo do checklist
+            const inputContainer = document.getElementById('checklist-inputs-container');
+            const summaryContainer = document.getElementById('checklist-summary-container');
+            if (inputContainer) inputContainer.classList.remove('hidden');
+            if (summaryContainer) summaryContainer.classList.add('hidden');
+
+            // Renderiza as abas de checklist em branco por padrão
+            renderAnalysisForm();
+
             // 🌟 PERSISTÊNCIA: Busca direta no Supabase para verificar se essa OS já tem checklist gravado
             try {
                 const { data: existingChecklist, error } = await supabaseClient
                     .from('checklist_analysis_general')
-                    .select('id')
-                    .eq('service_order_id', order.id)
-                    .limit(1);
+                    .select('*')
+                    .eq('service_order_id', order.id);
 
                 if (!error && existingChecklist && existingChecklist.length > 0) {
                     isChecklistSaved = true;
-                    // Habilita a Etapa 2 de geração do laudo imediatamente se já houver dados no banco
+                    // Habilita a Etapa 2 se já houver dados no banco
                     if (btnSeguirRelatorios) {
                         btnSeguirRelatorios.disabled = false;
                         btnSeguirRelatorios.className = "w-full sm:w-auto bg-brand-blue hover:bg-brand-blue-dark text-white font-bold py-3 px-6 rounded-lg transition duration-200 uppercase text-xs tracking-wider shadow-md flex items-center justify-center cursor-pointer";
+                    }
+                    // Oculta os inputs e exibe a visualização de leitura estática do checklist
+                    if (inputContainer) inputContainer.classList.add('hidden');
+                    if (summaryContainer) {
+                        summaryContainer.classList.remove('hidden');
+                        renderChecklistSummary(existingChecklist);
                     }
                 }
             } catch (err) { console.error("Erro ao verificar checklist existente:", err); }
@@ -1294,20 +1320,47 @@ todosOsSelects.forEach(select => {
             });
             
             // FUNÇÃO PARA PERSISTIR O CHECKLIST ANTES DE ENVIAR PARA ORÇAMENTO
-            async function saveChecklist() {
-                if (!activeOSId) {
-                    alert('Por favor, selecione uma Ordem de Serviço na fila antes de salvar.');
-                    return;
-                }
+           // FUNÇÃO PARA RENDERIZAR O RESUMO DO CHECKLIST EM MODO LEITURA (ESTÁTICO GERAL)
+        function renderChecklistSummary(checklistData) {
+            const list = document.getElementById('checklist-summary-list');
+            if (!list) return;
+            
+            if (!checklistData || checklistData.length === 0) {
+                list.innerHTML = `<p class="text-gray-400 italic">Nenhum detalhe técnico foi respondido no checklist.</p>`;
+                return;
+            }
 
-                btnSalvarChecklist.disabled = true;
-                btnSalvarChecklist.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin mr-2"></i> Salvando no Banco...';
+            list.innerHTML = checklistData.map(item => {
+                let badgeColor = "bg-slate-100 text-slate-700";
+                if (item.status === 'PEÇA OK') badgeColor = "bg-green-500 text-white";
+                if (item.status === 'RECONDICIONAR') badgeColor = "bg-yellow-500 text-white";
+                if (item.status === 'TROCAR') badgeColor = "bg-red-600 text-white";
 
-                try {
-                    const payload = await collectFormData();
-                    
-                    // URL do Webhook "TurboSul - Análise Técnica: Salvar"
-                    const WEBHOOK_SAVE_ONLY = 'https://webhook.mareflow.com.br/webhook/analysis/save';
+                return `
+                    <div class="flex items-center justify-between p-3.5 bg-white border border-slate-100 rounded-2xl shadow-sm">
+                        <span class="font-extrabold text-slate-700 uppercase text-[11px] tracking-tight">${item.item_name}</span>
+                        <div class="flex items-center space-x-3">
+                            <span class="px-3 py-1 rounded-lg text-[9px] font-black uppercase ${badgeColor} tracking-wider">${item.status}</span>
+                            ${item.observation ? `<span class="text-[10px] text-gray-400 italic max-w-[150px] truncate">Obs: "${item.observation}"</span>` : ''}
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        async function saveChecklist() {
+                        if (!activeOSId) {
+                            alert('Por favor, selecione uma Ordem de Serviço na fila antes de salvar.');
+                            return;
+                        }
+
+                        btnSalvarChecklist.disabled = true;
+                        btnSalvarChecklist.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin mr-2"></i> Salvando no Banco...';
+
+                        try {
+                            const payload = await collectFormData();
+                            
+                            // URL do Webhook "TurboSul - Análise Técnica: Salvar"
+                            const WEBHOOK_SAVE_ONLY = 'https://webhook.mareflow.com.br/webhook/analysis/save';
 
                     const response = await fetch(WEBHOOK_SAVE_ONLY, {
                         method: 'POST',
@@ -1317,6 +1370,15 @@ todosOsSelects.forEach(select => {
 
                     if (response.ok || response.status === 201) {
                         isChecklistSaved = true;
+
+                        // Oculta imediatamente os seletores de inputs e exibe a visualização estática de leitura
+                        const inputContainer = document.getElementById('checklist-inputs-container');
+                        const summaryContainer = document.getElementById('checklist-summary-container');
+                        if (inputContainer) inputContainer.classList.add('hidden');
+                        if (summaryContainer) {
+                            summaryContainer.classList.remove('hidden');
+                            renderChecklistSummary(payload.checklistAttachments || []);
+                        }
 
                         // 🌟 SUCESSO: Desabilita o botão, muda para verde e exibe "Checklist Salvo"
                         btnSalvarChecklist.disabled = true;
