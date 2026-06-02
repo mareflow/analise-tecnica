@@ -344,8 +344,7 @@
         </div>
     </div>
     
-    <!-- MODAIS EXISTENTES (success-modal removido, pois o novo analysis-saved-modal o substitui no fluxo) -->
-    
+    <!-- MODAIS EXISTENTES -->
     <div id="dispatch-success-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-[100]">
         <div class="bg-white w-full max-w-sm rounded-xl shadow-2xl p-6 text-center">
             <div class="flex flex-col items-center mb-4">
@@ -544,7 +543,7 @@
             "Padrão 3":  { eixo: "PEÇA OK", rotor: "TROCAR", ct: "PEÇA OK" },
             "Padrão 4":  { eixo: "PEÇA OK", rotor: "TROCAR", ct: "TROCAR" },
             "Padrão 5":  { eixo: "TROCAR", rotor: "PEÇA OK", ct: "PEÇA OK" },
-            "Padrão 6":  { eixo: "TROCAR", rotor: "TROCAR", ct: "PEÇA OK" }, // 🌟 CORREÇÃO: Corrigido o erro de digitação de 'Free' para 'eixo'
+            "Padrão 6":  { eixo: "TROCAR", rotor: "TROCAR", ct: "PEÇA OK" },
             "Padrão 7":  { eixo: "TROCAR", rotor: "PEÇA OK", ct: "TROCAR" },
             "Padrão 8":  { eixo: "TROCAR", rotor: "TROCAR", ct: "TROCAR" }
         };
@@ -565,9 +564,8 @@
         
         const FALLBACK_USER_UID = '8ab0d7ed-055c-4480-a1af-eb0b08894682';
 
-        // Variáveis DOM declaradas aqui para o escopo global (serão populadas em DCL)
+        // Variáveis DOM declaradas aqui para o escopo global
         let filaContainer, filaCountSpan, loadingMessage, modal, successModal, detailsModal, confirmDispatchModal, dispatchSuccessModal, confirmDispatchMessage, dispatchSuccessMessage, form, baseTrocaCheck, baseTrocaRadiosDiv, successOkBtn, closeDetailsBtn, dispatchAllBtn, confirmDispatchBtn, cancelDispatchBtn, dispatchSuccessOkBtn;
-        // NOVAS VARIÁVEIS DO MODAL DE ANÁLISE
         let analysisConfirmationModal, confirmAnalysisBtn, cancelAnalysisBtn, analysisSavedModal, analysisSavedOkBtn;
 
 
@@ -603,7 +601,7 @@
             }
         }
 
-function formatMaintenanceExtras(extras) {
+        function formatMaintenanceExtras(extras) {
             if (!extras || typeof extras !== 'object') return '<li class="text-gray-400">Nenhum item adicional.</li>';
             
             const mapping = { actuator: 'Atuador', geometry: 'Geometria Variável', geometryStem: 'Canote da Geometria', geometryFlange: 'Flange da Geometria' };
@@ -615,7 +613,6 @@ function formatMaintenanceExtras(extras) {
         }
         
         function renderOrderCard(order) {
-            // Inteligência de Botão: Mostra as ações se o status OU a opção de troca indicarem Standby
             const isStandby = order.status === 'Standby / Aguardando Casco' || order.trade_in_option === 'Standby';
             const urgencyText = order.urgency || 'Normal';
             const urgencyClass = getUrgencyBadge(urgencyText);
@@ -630,8 +627,6 @@ function formatMaintenanceExtras(extras) {
                 `;
             }
 
-            // UNÍSSONO: O card agora carrega o status para o listener decidir se abre Form ou Raio-X
-// UNÍSSONO: Removido o 'onclick' fixo para o JavaScript decidir o que abrir
             return `
                 <div class="os-card bg-white p-3 rounded-lg shadow border border-gray-200 cursor-pointer" 
                      data-order-id="${order.id}" 
@@ -690,13 +685,11 @@ function formatMaintenanceExtras(extras) {
             `;
         }
         
-        // Aplica cores dinamicamente aos dropdowns de status (CORRIGIDO PARA TROCAR/TROCAR PEÇA)
-function updateStatusSelectStyle(element) {
-            // Se o que veio foi um evento, pega o target. Se veio o elemento direto, usa ele.
+        // Aplica cores dinamicamente aos dropdowns de status
+        function updateStatusSelectStyle(element) {
             const select = element.target ? element.target : element;
             if (!select || !select.classList) return;
 
-            // Limpa todas as classes de cor e efeitos
             select.classList.remove('bg-slate-400', 'bg-green-500', 'bg-red-600', 'bg-yellow-500', 'text-white', 'opacity-50', 'grayscale', 'animate-pulse');
             
             const value = select.value;
@@ -708,11 +701,11 @@ function updateStatusSelectStyle(element) {
             } else if (value === 'TROCAR' || value === 'TROCAR PEÇA' || value.includes('TROCAR')) {
                 select.classList.add('bg-red-600', 'text-white');
             } else if (value === 'ITEM FALTANTE') {
-                select.classList.add('bg-slate-800', 'text-white'); // Cor Cinza Escuro/Preto
+                select.classList.add('bg-slate-800', 'text-white');
             } else if (value === 'NÃO RECEBIDO') {
                 select.classList.add('bg-slate-200', 'text-slate-500', 'opacity-50', 'grayscale');
             } else {
-                select.classList.add('bg-slate-400', 'text-white'); // NÃO INFORMADO
+                select.classList.add('bg-slate-400', 'text-white');
             }
         }
         
@@ -732,10 +725,8 @@ function updateStatusSelectStyle(element) {
             document.querySelector(`[data-tab="${tabId}"]`).classList.remove('text-gray-500', 'hover:text-gray-700');
         }
 
-        // Preenche o formulário ao selecionar uma OS
-// Preenche o formulário ao selecionar uma OS (Com detecção de checklist salvo)
-// Preenche o formulário ao selecionar uma OS (Com detecção de checklist salvo)
-async function populateForm(order) {
+        // Preenche o formulário ao selecionar uma OS (Com detecção de checklist salvo)
+        async function populateForm(order) {
             activeOSId = order.id;
             isChecklistSaved = false; // Reseta estado local por padrão
             
@@ -745,7 +736,7 @@ async function populateForm(order) {
                 btnSeguirRelatorios.className = "w-full sm:w-auto bg-gray-400 cursor-not-allowed text-white font-bold py-3 px-6 rounded-lg transition duration-200 uppercase text-xs tracking-wider shadow-md flex items-center justify-center";
             }
 
-            // 🌟 RESET: Retorna o botão de salvar para o estado inicial laranja e clicável
+            // RESET: Retorna o botão de salvar para o estado inicial laranja e clicável
             if (btnSalvarChecklist) {
                 btnSalvarChecklist.disabled = false;
                 btnSalvarChecklist.className = "bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-8 rounded-lg transition duration-200 uppercase text-xs tracking-wider shadow-md flex items-center justify-center";
@@ -761,7 +752,7 @@ async function populateForm(order) {
             // Renderiza as abas de checklist em branco por padrão
             renderAnalysisForm();
 
-            // 🌟 PERSISTÊNCIA: Busca direta no Supabase para verificar se essa OS já tem checklist gravado
+            // PERSISTÊNCIA: Busca direta no Supabase para verificar se essa OS já tem checklist gravado
             try {
                 const { data: existingChecklist, error } = await supabaseClient
                     .from('checklist_analysis_general')
@@ -795,7 +786,7 @@ async function populateForm(order) {
             const btnHist = document.getElementById('btn-historico-completo');
             btnHist.onclick = () => showDetailsModalWithHistory(order);
 
-            // --- Lógica dos Itens Adicionais (Atuador, Geometria...) ---
+            // --- Lógica dos Itens Adicionais ---
             const extras = typeof order.maintenance_extras === 'string' ? JSON.parse(order.maintenance_extras) : order.maintenance_extras;
             const mapping = {
                 actuator: { check: 'check-actuator', status: 'status-actuator' },
@@ -812,7 +803,7 @@ async function populateForm(order) {
                 
                 if (checkEl && statusEl) {
                     checkEl.checked = hasItem;
-                    checkEl.disabled = false; // LIBERADO: O Analista agora marca o que encontrou
+                    checkEl.disabled = false;
                     
                     // Função para habilitar/desabilitar o veredito baseada no checkbox
                     const toggleStatus = (isChecked) => {
@@ -828,10 +819,8 @@ async function populateForm(order) {
                         updateStatusSelectStyle(statusEl);
                     };
 
-                    // Define estado inicial
                     toggleStatus(hasItem);
 
-                    // Escuta a mudança manual do Analista
                     checkEl.onchange = (e) => toggleStatus(e.target.checked);
                 }
             });
@@ -841,17 +830,14 @@ async function populateForm(order) {
                 aplicarPadraoManutencao(order.difficulty);
             }
             switchTab('tab1');
-            // Garante que o formulário comece no topo ao carregar nova OS
             const wrapper = document.getElementById('tab-content-wrapper');
             if (wrapper) wrapper.scrollTop = 0;
         }
 
-async function showDetailsModalWithHistory(order) {
-            // 1. Tratamento de Dados de Entrada
+        async function showDetailsModalWithHistory(order) {
             const extras = typeof order.maintenance_extras === 'string' ? JSON.parse(order.maintenance_extras) : order.maintenance_extras;
             const tradeInText = order.is_trade_in ? `Venda à Base de Troca (${order.trade_in_option || 'Pendente'})` : 'Venda Comum';
 
-            // 2. Preenchimento dos Campos Básicos
             document.getElementById('detail-business-id').textContent = order.business_id;
             document.getElementById('detail-model').textContent = order.model;
             document.getElementById('detail-client').textContent = order.client;
@@ -860,16 +846,13 @@ async function showDetailsModalWithHistory(order) {
             document.getElementById('detail-urgency').className = 'inline-block text-xs font-bold px-2 py-0.5 rounded-full ' + getUrgencyBadge(order.urgency);
             document.getElementById('detail-created-at').textContent = formatDateTime(order.created_at);
             
-            // 3. Detalhes Adicionais (Os que estavam vazios)
             document.getElementById('detail-difficulty').textContent = order.difficulty || 'Não definido';
             document.getElementById('detail-trade-in').textContent = tradeInText;
             document.getElementById('detail-observation').textContent = order.observation || 'Nenhuma observação registrada.';
             
-            // 4. Itens Adicionais (Lista de Atuador, Geometria...)
             const listExtras = document.getElementById('detail-maintenance-extras');
             listExtras.innerHTML = formatMaintenanceExtras(extras);
 
-            // 5. Busca e Renderização da Linha do Tempo
             const timeline = document.getElementById('timeline-container');
             timeline.innerHTML = '<p class="text-xs text-gray-400 animate-pulse">Carregando histórico...</p>';
             
@@ -898,7 +881,6 @@ async function showDetailsModalWithHistory(order) {
         }
 
         function aplicarPadraoManutencao(nivel) {
-            // Regra de negócio: Níveis altos (ex: 7 e 8) sugerem troca de componentes core
             if (nivel >= 7) {
                 const eixo = document.getElementById('status-eixo_rotor');
                 const rotor = document.getElementById('status-rotor_compressor');
@@ -907,7 +889,6 @@ async function showDetailsModalWithHistory(order) {
             }
         }
 
-        // Carregamento de dados (Mantido)
         async function loadAnalysisOrders() { 
             const WEBHOOK_GET = WEBHOOK_GET_ANALYSIS;
             
@@ -954,7 +935,6 @@ async function showDetailsModalWithHistory(order) {
                 filaCountSpan.textContent = currentOrders.length;
                 
                 updateSidebarUI();
-                
                 addCardClickListeners();
 
             } catch (error) {
@@ -965,7 +945,6 @@ async function showDetailsModalWithHistory(order) {
             }
         }
         
-        // Funções de Modal
         function showAnalysisConfirmationModal() {
             analysisConfirmationModal.classList.remove('hidden');
             analysisConfirmationModal.classList.add('flex');
@@ -986,32 +965,20 @@ async function showDetailsModalWithHistory(order) {
             analysisSavedModal.classList.remove('flex');
         }
 
-        // Funções de Modal (Mantidas, mas não relevantes para o fluxo ANA)
-        function showSuccessModal() { /* ... */ }
-        function showDispatchSuccessModal(count) { /* ... */ }
-        function closeModal() { /* ... */ }
-        function closeDetailsModal() { /* ... */ }
-        function closeConfirmDispatchModal() { /* ... */ }
-        function closeDispatchSuccessModal() { /* ... */ }
-        async function dispatchAllOrders(osIds) { /* ... */ }
-
         // ====================================================================
-        // 3. COLETA E SUBMISSÃO DE DADOS (NOVO)
+        // 3. COLETA E SUBMISSÃO DE DADOS
         // ====================================================================
 
-        // Função auxiliar para coletar dados das abas de checklist
         function collectChecklistData(tabKey) {
             const items = ANALYSIS_ITEMS[tabKey];
             const data = [];
             
-            // Lógica específica para o Checkbox Global Condenar Caracol (Tab 3)
             if (tabKey === 'tab3') {
                 const condemnCheck = document.getElementById('condenar-caracol-check');
                 if (condemnCheck && condemnCheck.checked) {
-                     // Adiciona um item de checklist que representa a Condenação Global
                     data.push({
                         name: "CONDENAR CARACOL COMPLETO",
-                        status: "TROCAR", // Status para condenação global
+                        status: "TROCAR",
                         obs: "Condenado pela análise técnica."
                     });
                 }
@@ -1022,7 +989,6 @@ async function showDetailsModalWithHistory(order) {
                 const statusSelect = document.getElementById(`status-${cleanName}`);
                 const obsTextarea = document.getElementById(`obs-${cleanName}`);
 
-                // Inclui apenas itens que não estão como 'NÃO INFORMADO' (valor default)
                 if (statusSelect && obsTextarea && statusSelect.value !== 'NÃO INFORMADO' && statusSelect.value !== 'Não Informado') {
                     data.push({
                         name: itemName,
@@ -1034,24 +1000,18 @@ async function showDetailsModalWithHistory(order) {
             return data;
         }
 
-        // Função principal para coletar todos os dados do formulário (LÓGICA UNIFICADA TURBOSUL)
         async function collectFormData() {
             const patternSelected = document.getElementById('pattern-select').value;
             const generalObservations = document.getElementById('observacoes-analise').value.trim();
             
-            // --- 1. LÓGICA DE TRIAGEM (Apenas o que o PADRÃO 1-8 define como troca) ---
             const routingTriage = [];
             if (patternSelected) {
                 const p = patternSelected;
-                // Eixo Rotor = Padrões 5, 6, 7, 8
                 if (["Padrão 5", "Padrão 6", "Padrão 7", "Padrão 8"].includes(p)) routingTriage.push("Eixo Rotor");
-                // Rotor Compressor = Padrões 3, 4, 6, 8
                 if (["Padrão 3", "Padrão 4", "Padrão 6", "Padrão 8"].includes(p)) routingTriage.push("Rotor Compressor");
-                // Carcaça de Turbina (CT) = Padrões 2, 4, 7, 8
                 if (["Padrão 2", "Padrão 4", "Padrão 7", "Padrão 8"].includes(p)) routingTriage.push("Carcaça de Turbina (CT)");
             }
 
-            // --- 2. LÓGICA DE VENDAS (Apenas os 4 itens fixos do topo) ---
             const maintenanceExtras = {
                 actuator: { came: document.getElementById('check-actuator').checked, status: document.getElementById('status-actuator').value },
                 geometry: { came: document.getElementById('check-geometry').checked, status: document.getElementById('status-geometry').value },
@@ -1065,20 +1025,17 @@ async function showDetailsModalWithHistory(order) {
                 pattern: patternSelected || "Não informado",
                 general_observations: generalObservations,
                 
-                // 3. Gavetas de Checklists (Para registro no histórico/banco)
                 attachments: collectChecklistData('tab1'), 
                 general_repairs: collectChecklistData('tab2'),
                 snail_checklist: collectChecklistData('tab3'),
                 
-                // 4. Roteamentos Inteligentes (O n8n vai usar estas gavetas abaixo)
-                routing_triage: routingTriage, // Só o que o setor de Triagem vai ver
-                maintenance_extras: maintenanceExtras // Só o que o setor de Vendas vai ver
+                routing_triage: routingTriage, 
+                maintenance_extras: maintenanceExtras 
             };
 
             return payload;
         }
 
-        // Função para submeter a análise (COM MODAL DE ERRO CUSTOMIZADO)
         async function submitAnalysis() {
             if (!activeOSId) return;
             
@@ -1097,7 +1054,6 @@ async function showDetailsModalWithHistory(order) {
                 if (response.ok || response.status === 201) {
                     const result = await response.json();
                     
-                    // TRATAMENTO TurboSul: Aceita Array ou Objeto e os dois nomes de campo (download_url ou pdf_url)
                     const data = Array.isArray(result) ? result[0] : result;
                     const urlFinal = data.download_url || data.pdf_url;
 
@@ -1114,7 +1070,6 @@ async function showDetailsModalWithHistory(order) {
                     showAnalysisSavedModal();
                 } else {
                     const errorBody = await response.text();
-                    // EXIBE O MODAL DE ERRO EM VEZ DO ALERT
                     document.getElementById('error-analysis-message').innerText = "Erro no servidor: " + errorBody.substring(0, 50);
                     document.getElementById('error-analysis-modal').classList.remove('hidden');
                     document.getElementById('error-analysis-modal').classList.add('flex');
@@ -1122,7 +1077,6 @@ async function showDetailsModalWithHistory(order) {
                 }
 
             } catch (error) {
-                // EXIBE O MODAL DE ERRO EM VEZ DO ALERT
                 document.getElementById('error-analysis-message').innerText = "Falha de conexão. Verifique sua internet.";
                 document.getElementById('error-analysis-modal').classList.remove('hidden');
                 document.getElementById('error-analysis-modal').classList.add('flex');
@@ -1146,11 +1100,9 @@ async function showDetailsModalWithHistory(order) {
                     
                     if (!orderData) return;
 
-                    // Se estiver em Standby, abre apenas o Raio-X (Visualização)
                     if (orderStatus === 'Standby / Aguardando Casco') {
                         abrirRaioX(orderId);
                     } 
-                    // Se for Fila normal, abre o Formulário Técnico (Ação)
                     else {
                         populateForm(orderData);
                     }
@@ -1159,16 +1111,12 @@ async function showDetailsModalWithHistory(order) {
         }
         
         document.addEventListener('DOMContentLoaded', () => {
-            // Mapeamento dos elementos DOM - IDs corrigidos para bater com o HTML
             filaContainer = document.getElementById('fila-de-analise-container');
-            filaCountSpan = document.getElementById('count-fila'); // ID correto do seu HTML
-            
-            // Adicione esta linha para mapear o contador de standby também
+            filaCountSpan = document.getElementById('count-fila'); 
             const standbyCountSpan = document.getElementById('count-standby'); 
             
             loadingMessage = document.getElementById('loading-message');
             
-            // Mapeamento dos botões do fluxo de duas etapas
             btnSalvarChecklist = document.getElementById('btn-salvar-checklist');
             btnSeguirRelatorios = document.getElementById('btn-seguir-relatorios');
             
@@ -1180,18 +1128,14 @@ async function showDetailsModalWithHistory(order) {
             const logoutBtn = document.getElementById('logout-button');
             const tabButtons = document.querySelectorAll('.tab-button');
             
-            // NOVO: Mapeamento dos Modais de Análise
             analysisConfirmationModal = document.getElementById('analysis-confirmation-modal');
             confirmAnalysisBtn = document.getElementById('confirm-analysis-btn');
             cancelAnalysisBtn = document.getElementById('cancel-analysis-btn');
             analysisSavedModal = document.getElementById('analysis-saved-modal');
             analysisSavedOkBtn = document.getElementById('analysis-saved-ok-btn');
             
-// 1. Renderiza o formulário padrão
             renderAnalysisForm();
 
-// Gatilho: Condenar Caracol Completo (Aba 3)
-            // Usamos delegação de evento para garantir que funcione mesmo após trocas de OS
             document.addEventListener('change', function(e) {
                 if (e.target && e.target.id === 'condenar-caracol-check') {
                     const isChecked = e.target.checked;
@@ -1201,16 +1145,14 @@ async function showDetailsModalWithHistory(order) {
                     if (tab3Div) {
                         const todosOsSelects = tab3Div.querySelectorAll('select');
                         
-todosOsSelects.forEach(select => {
-                        select.value = statusTarget;
-                        // Força a atualização visual (cor vermelha/cinza)
-                        updateStatusSelectStyle(select);
-                    });
-                    // NOVO: Atualiza o resumo de substituição na hora!
-                    atualizarResumoGeral();
+                        todosOsSelects.forEach(select => {
+                            select.value = statusTarget;
+                            updateStatusSelectStyle(select);
+                        });
+                        atualizarResumoGeral();
+                    }
                 }
-            }
-        });
+            });
 
             document.getElementById('pattern-select').addEventListener('change', function(e) {
                 const padrao = e.target.value;
@@ -1220,7 +1162,7 @@ todosOsSelects.forEach(select => {
                         'status-eixo_rotor': dados.eixo,
                         'status-rotor_compressor': dados.rotor,
                         'status-carcaça_compressora': dados.ct,
-                        'status-trincas_(parede)': dados.ct // Mapeia para ambos os nomes possíveis no banco
+                        'status-trincas_(parede)': dados.ct
                     };
                     Object.entries(mapeamento).forEach(([id, valor]) => {
                         const el = document.getElementById(id);
@@ -1232,25 +1174,21 @@ todosOsSelects.forEach(select => {
                 }
             });
             
-            // Adiciona listeners para mudança de cor nos selects de status (Todos os selects da página)
             document.querySelectorAll('.status-select').forEach(select => {
                 select.addEventListener('change', updateStatusSelectStyle);
                 updateStatusSelectStyle({ target: select });
             });
 
-            // Adiciona listeners para mudança de cor nos selects da seção de ADICIONAIS FIXOS
             document.querySelectorAll('select[id^="status-"]').forEach(select => {
                 select.addEventListener('change', updateStatusSelectStyle);
                 updateStatusSelectStyle({ target: select });
             });
 
-            // Função para atualizar o resumo final (Garante uníssono entre formulário e visual)
             function atualizarResumoGeral() {
                 const trocasExternas = [];
                 const trocasInternas = [];
                 const servicos = [];
 
-                // 1. Mapeamento de nomes amigáveis para os itens do TOPO
                 const labelsTopo = {
                     'actuator': 'Atuador',
                     'geometry': 'Geometria Variável',
@@ -1258,7 +1196,6 @@ todosOsSelects.forEach(select => {
                     'geometryFlange': 'Flange da Geometria'
                 };
 
-                // 2. Varre todos os itens das 3 abas de checklist
                 Object.keys(ANALYSIS_ITEMS).forEach(tab => {
                     ANALYSIS_ITEMS[tab].forEach(item => {
                         const cleanName = item.replace(/\s+/g, '_').toLowerCase();
@@ -1274,7 +1211,6 @@ todosOsSelects.forEach(select => {
                     });
                 });
 
-                // 3. Verifica Adicionais do Topo
                 ['actuator', 'geometry', 'geometryStem', 'geometryFlange'].forEach(id => {
                     const el = document.getElementById(`status-${id}`);
                     if (el && !el.disabled && el.value === 'TROCAR') {
@@ -1285,7 +1221,6 @@ todosOsSelects.forEach(select => {
                 const resumoPecas = document.getElementById('substituicao-resumo');
                 const resumoServicos = document.getElementById('servicos-resumo');
 
-                // 4. Atualiza visualmente o campo de SUBSTITUIÇÃO
                 if (trocasExternas.length > 0 || trocasInternas.length > 0) {
                     const totalPecas = [...trocasExternas, ...trocasInternas];
                     resumoPecas.innerHTML = `<span class="font-black text-red-700 uppercase">SUBSTITUIÇÃO:</span> ${totalPecas.join(', ')}`;
@@ -1293,7 +1228,6 @@ todosOsSelects.forEach(select => {
                     resumoPecas.innerText = 'Nenhuma peça para substituição.';
                 }
 
-                // 5. Atualiza visualmente o campo de SERVIÇOS
                 if (servicos.length > 0) {
                     resumoServicos.innerHTML = `<span class="font-black text-yellow-700 uppercase">USINAGEM/SERVIÇOS:</span> ${servicos.join(', ')}`;
                 } else {
@@ -1301,17 +1235,13 @@ todosOsSelects.forEach(select => {
                 }
             }
 
-            // Ativa o ouvinte para cliques manuais no form
             document.getElementById('analysis-form').addEventListener('change', atualizarResumoGeral);
 
-
-// Listener de Logout
             logoutBtn.addEventListener('click', async () => {
                 await supabaseClient.auth.signOut();
                 window.location.href = '/index.html';
             });
 
-            // ATIVADOR DO BOTÃO FECHAR (X) DO MODAL
             const btnFecharModal = document.getElementById('close-details-modal-btn');
             if (btnFecharModal) {
                 btnFecharModal.addEventListener('click', () => {
@@ -1321,55 +1251,56 @@ todosOsSelects.forEach(select => {
                 });
             }
             
-            // Listener das Abas
             tabButtons.forEach(button => {
                 button.addEventListener('click', (e) => {
                     switchTab(e.target.dataset.tab);
                 });
             });
-            
-            // FUNÇÃO PARA PERSISTIR O CHECKLIST ANTES DE ENVIAR PARA ORÇAMENTO
-           // FUNÇÃO PARA RENDERIZAR O RESUMO DO CHECKLIST EM MODO LEITURA (ESTÁTICO GERAL)
-        function renderChecklistSummary(checklistData) {
-            const list = document.getElementById('checklist-summary-list');
-            if (!list) return;
-            
-            if (!checklistData || checklistData.length === 0) {
-                list.innerHTML = `<p class="text-gray-400 italic">Nenhum detalhe técnico foi respondido no checklist.</p>`;
-                return;
+
+            // FUNÇÃO PARA RENDERIZAR O RESUMO DO CHECKLIST EM MODO LEITURA (ESTÁTICO GERAL)
+            function renderChecklistSummary(checklistData) {
+                const list = document.getElementById('checklist-summary-list');
+                if (!list) return;
+                
+                if (!checklistData || checklistData.length === 0) {
+                    list.innerHTML = `<p class="text-gray-400 italic">Nenhum detalhe técnico foi respondido no checklist.</p>`;
+                    return;
+                }
+
+                list.innerHTML = checklistData.map(item => {
+                    let badgeColor = "bg-slate-100 text-slate-700";
+                    if (item.status === 'PEÇA OK') badgeColor = "bg-green-500 text-white";
+                    if (item.status === 'RECONDICIONAR') badgeColor = "bg-yellow-500 text-white";
+                    if (item.status === 'TROCAR') badgeColor = "bg-red-600 text-white";
+
+                    const displayName = item.item_name || item.name || "Item não identificado";
+                    const displayObs = item.observation || item.obs || "";
+
+                    return `
+                        <div class="flex items-center justify-between p-3.5 bg-white border border-slate-100 rounded-2xl shadow-sm">
+                            <span class="font-extrabold text-slate-700 uppercase text-[11px] tracking-tight">${displayName}</span>
+                            <div class="flex items-center space-x-3">
+                                <span class="px-3 py-1 rounded-lg text-[9px] font-black uppercase ${badgeColor} tracking-wider">${item.status}</span>
+                                ${displayObs ? `<span class="text-[10px] text-gray-400 italic max-w-[150px] truncate">Obs: "${displayObs}"</span>` : ''}
+                            </div>
+                        </div>`;
+                }).join('');
             }
 
-            list.innerHTML = checklistData.map(item => {
-                let badgeColor = "bg-slate-100 text-slate-700";
-                if (item.status === 'PEÇA OK') badgeColor = "bg-green-500 text-white";
-                if (item.status === 'RECONDICIONAR') badgeColor = "bg-yellow-500 text-white";
-                if (item.status === 'TROCAR') badgeColor = "bg-red-600 text-white";
+            // FUNÇÃO PARA PERSISTIR O CHECKLIST ANTES DE ENVIAR PARA ORÇAMENTO
+            async function saveChecklist() {
+                if (!activeOSId) {
+                    alert('Por favor, selecione uma Ordem de Serviço na fila antes de salvar.');
+                    return;
+                }
 
-                return `
-                    <div class="flex items-center justify-between p-3.5 bg-white border border-slate-100 rounded-2xl shadow-sm">
-                        <span class="font-extrabold text-slate-700 uppercase text-[11px] tracking-tight">${item.item_name}</span>
-                        <div class="flex items-center space-x-3">
-                            <span class="px-3 py-1 rounded-lg text-[9px] font-black uppercase ${badgeColor} tracking-wider">${item.status}</span>
-                            ${item.observation ? `<span class="text-[10px] text-gray-400 italic max-w-[150px] truncate">Obs: "${item.observation}"</span>` : ''}
-                        </div>
-                    </div>`;
-            }).join('');
-        }
+                btnSalvarChecklist.disabled = true;
+                btnSalvarChecklist.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin mr-2"></i> Salvando no Banco...';
 
-        async function saveChecklist() {
-                        if (!activeOSId) {
-                            alert('Por favor, selecione uma Ordem de Serviço na fila antes de salvar.');
-                            return;
-                        }
-
-                        btnSalvarChecklist.disabled = true;
-                        btnSalvarChecklist.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin mr-2"></i> Salvando no Banco...';
-
-                        try {
-                            const payload = await collectFormData();
-                            
-                            // URL do Webhook "TurboSul - Análise Técnica: Salvar"
-                            const WEBHOOK_SAVE_ONLY = 'https://webhook.mareflow.com.br/webhook/analysis/save';
+                try {
+                    const payload = await collectFormData();
+                    
+                    const WEBHOOK_SAVE_ONLY = 'https://webhook.mareflow.com.br/webhook/analysis/save';
 
                     const response = await fetch(WEBHOOK_SAVE_ONLY, {
                         method: 'POST',
@@ -1380,21 +1311,24 @@ todosOsSelects.forEach(select => {
                     if (response.ok || response.status === 201) {
                         isChecklistSaved = true;
 
-                        // Oculta imediatamente os seletores de inputs e exibe a visualização estática de leitura
                         const inputContainer = document.getElementById('checklist-inputs-container');
                         const summaryContainer = document.getElementById('checklist-summary-container');
                         if (inputContainer) inputContainer.classList.add('hidden');
                         if (summaryContainer) {
                             summaryContainer.classList.remove('hidden');
-                            renderChecklistSummary(payload.checklistAttachments || []);
+                            
+                            const itemsToRender = payload.checklistAttachments || [
+                                ...(payload.attachments || []),
+                                ...(payload.general_repairs || []),
+                                ...(payload.snail_checklist || [])
+                            ];
+                            renderChecklistSummary(itemsToRender);
                         }
 
-                        // 🌟 SUCESSO: Desabilita o botão, muda para verde e exibe "Checklist Salvo"
                         btnSalvarChecklist.disabled = true;
                         btnSalvarChecklist.className = "bg-green-600 text-white font-bold py-3 px-8 rounded-lg cursor-not-allowed shadow-md flex items-center justify-center opacity-90";
                         btnSalvarChecklist.innerHTML = '<i class="fa-solid fa-circle-check mr-2"></i> Checklist Salvo!';
 
-                        // Libera visualmente e logicamente o botão do Laudo PDF (Etapa 2)
                         btnSeguirRelatorios.disabled = false;
                         btnSeguirRelatorios.className = "w-full sm:w-auto bg-brand-blue hover:bg-brand-blue-dark text-white font-bold py-3 px-6 rounded-lg transition duration-200 uppercase text-xs tracking-wider shadow-md flex items-center justify-center cursor-pointer";
 
@@ -1413,7 +1347,6 @@ todosOsSelects.forEach(select => {
                 }
             }
 
-            // Validação de envio do formulário de geração final do laudo
             formElement.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 
@@ -1430,24 +1363,17 @@ todosOsSelects.forEach(select => {
                 showAnalysisConfirmationModal();
             });
 
-            // NOVO: Listener do botão de confirmação dentro do modal
             confirmAnalysisBtn.addEventListener('click', submitAnalysis);
-
-            // NOVO: Listeners para fechar o modal de confirmação
             cancelAnalysisBtn.addEventListener('click', closeAnalysisConfirmationModal);
 
-            // NOVO: Listener para fechar o modal de sucesso e recarregar
             analysisSavedOkBtn.addEventListener('click', async () => {
                 closeAnalysisSavedModal();
-                // Oculta o formulário e mostra o placeholder
                 document.getElementById('analysis-form-wrapper').classList.add('hidden');
                 document.getElementById('initial-placeholder').classList.remove('hidden');
-                // Recarrega a lista de ordens para atualizar a fila
                 await loadAnalysisOrders();
-                activeOSId = null; // Limpa a OS ativa
+                activeOSId = null; 
             });
             
-            // Chamada de Inicialização
             (async function initDashboard() {
                 const { data: { session }, error } = await supabaseClient.auth.getSession();
 
@@ -1458,11 +1384,10 @@ todosOsSelects.forEach(select => {
 
                 await loadAnalysisOrders();
             })();
-        }); // <--- FIM DO DOMCONTENTLOADED (FECHADO CORRETAMENTE)
+        }); 
 
         let activeTab = 'fila';
 
-        // Lógica de Alternar Abas (Usando delegação para garantir o clique)
         document.addEventListener('click', (e) => {
             if (e.target.id === 'tab-fila-btn' || e.target.closest('#tab-fila-btn')) {
                 activeTab = 'fila';
@@ -1479,11 +1404,9 @@ todosOsSelects.forEach(select => {
         });
 
         function updateSidebarUI() {
-            // Filtro Inteligente: Se for standby no status OU na opção de troca, vai para a aba cinza
             const fila = currentOrders.filter(o => o.status !== 'Standby / Aguardando Casco' && o.trade_in_option !== 'Standby');
             const standby = currentOrders.filter(o => o.status === 'Standby / Aguardando Casco' || o.trade_in_option === 'Standby');
             
-            // Blindagem: só tenta escrever se os elementos existirem
             const cf = document.getElementById('count-fila');
             const cs = document.getElementById('count-standby');
             if (cf) cf.innerText = fila.length;
@@ -1491,18 +1414,15 @@ todosOsSelects.forEach(select => {
 
             const targetList = activeTab === 'fila' ? fila : standby;
             if (filaContainer) {
-filaContainer.innerHTML = targetList.length ? targetList.map(o => renderOrderCard(o)).join('') : '<p class="text-gray-500 text-center mt-4 uppercase font-black text-[10px]">Nenhuma ordem pendente.</p>';
-            
-            // CHAMADA VITAL PARA O UNÍSSONO:
-            addCardClickListeners(); 
-        }
+                filaContainer.innerHTML = targetList.length ? targetList.map(o => renderOrderCard(o)).join('') : '<p class="text-gray-500 text-center mt-4 uppercase font-black text-[10px]">Nenhuma ordem pendente.</p>';
+                addCardClickListeners(); 
+            }
         }
 
-function abrirRaioX(id) {
+        function abrirRaioX(id) {
             const os = currentOrders.find(o => o.id === id);
             if (!os) return;
 
-            // 1. Tratamento para o JSONB de itens adicionais
             let extrasHtml = "";
             if (os.maintenance_extras) {
                 const extras = typeof os.maintenance_extras === 'string' ? JSON.parse(os.maintenance_extras) : os.maintenance_extras;
@@ -1513,7 +1433,6 @@ function abrirRaioX(id) {
                     .join(' ');
             }
 
-            // 2. Montagem do HTML principal + Linha do Tempo (Cronologia)
             document.getElementById('raiox-content').innerHTML = `
                 <div class="col-span-2 bg-slate-50 p-4 rounded-xl border border-slate-200 mb-2">
                     <p class="text-slate-400 text-[9px] font-black uppercase tracking-widest mb-1 italic">Identificação da Ordem</p>
@@ -1567,9 +1486,7 @@ function abrirRaioX(id) {
             document.getElementById('raiox-modal').classList.add('flex');
         }
 
-        // FUNÇÃO PARA RECEBER CASCO E VOLTAR PARA A FILA DE ANÁLISE
-// FUNÇÃO PARA RECEBER CASCO (Agora com Modal TurboSul)
-function liberarCasco(id) {
+        function liberarCasco(id) {
             const modalHull = document.getElementById('hull-confirmation-modal');
             const btnConfirm = document.getElementById('confirm-hull-btn');
             
@@ -1587,7 +1504,7 @@ function liberarCasco(id) {
                         body: JSON.stringify({ 
                             os_id: id, 
                             status: 'Aguardando Análise Técnica',
-                            trade_in_option: 'Já Recebido', // <--- ESSA LINHA RESOLVE O FILTRO
+                            trade_in_option: 'Já Recebido', 
                             action: 'Casco Recebido',
                             details: 'O técnico confirmou o recebimento do casco físico.'
                         })
@@ -1608,7 +1525,6 @@ function liberarCasco(id) {
             };
         }
 		
-		// FUNÇÃO PARA FINALIZAR OS (PAGOU CASCO)
         function pagarCasco(id) {
             const modalPay = document.getElementById('payment-confirmation-modal');
             const btnConfirm = document.getElementById('confirm-payment-btn');
@@ -1621,7 +1537,6 @@ function liberarCasco(id) {
                 btnConfirm.textContent = "Finalizando...";
                 
                 try {
-                    // Chamada para o Webhook que define status como FINALIZADO
                     const response = await fetch('https://teste.mareflow.com.br/webhook/orders/update-status', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
@@ -1635,7 +1550,7 @@ function liberarCasco(id) {
 
                     if (response.ok) {
                         modalPay.classList.add('hidden');
-                        await loadAnalysisOrders(); // Recarrega a sidebar para remover o card
+                        await loadAnalysisOrders(); 
                     } else {
                         alert("Erro no servidor ao registrar pagamento.");
                     }
@@ -1648,8 +1563,7 @@ function liberarCasco(id) {
             };
         }
 
-        // Função para Gerar Excel com nomes técnicos (CT, CCO, CCE, etc)
-function gerarRelatorioExcel(payload) {
+        function gerarRelatorioExcel(payload) {
             const mapping = {
                 'Carcaça Compressora': 'CCO',
                 'Carcaça Central': 'CCE',
@@ -1662,7 +1576,6 @@ function gerarRelatorioExcel(payload) {
                 'Geometria Variável': 'Geometria'
             };
 
-            // Prepara os dados incluindo os Adicionais do Topo
             const adicionais = [
                 ['Atuador', payload.maintenance_extras.actuator.status, ''],
                 ['Geometria', payload.maintenance_extras.geometry.status, ''],
@@ -1682,7 +1595,6 @@ function gerarRelatorioExcel(payload) {
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Analise_Tecnica");
             
-            // Nome do arquivo com ID da OS e Data
             const fileName = `Analise_${payload.os_id}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.xlsx`;
             XLSX.writeFile(wb, fileName);
         }
