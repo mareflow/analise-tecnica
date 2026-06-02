@@ -524,7 +524,7 @@
             "Padrão 3":  { eixo: "PEÇA OK", rotor: "TROCAR", ct: "PEÇA OK" },
             "Padrão 4":  { eixo: "PEÇA OK", rotor: "TROCAR", ct: "TROCAR" },
             "Padrão 5":  { eixo: "TROCAR", rotor: "PEÇA OK", ct: "PEÇA OK" },
-            "Padrão 6":  { Free: "TROCAR", rotor: "TROCAR", ct: "PEÇA OK" },
+            "Padrão 6":  { eixo: "TROCAR", rotor: "TROCAR", ct: "PEÇA OK" }, // 🌟 CORREÇÃO: Corrigido o erro de digitação de 'Free' para 'eixo'
             "Padrão 7":  { eixo: "TROCAR", rotor: "PEÇA OK", ct: "TROCAR" },
             "Padrão 8":  { eixo: "TROCAR", rotor: "TROCAR", ct: "TROCAR" }
         };
@@ -721,6 +721,13 @@ function populateForm(order) {
             if (btnSeguirRelatorios) {
                 btnSeguirRelatorios.disabled = true;
                 btnSeguirRelatorios.className = "w-full sm:w-auto bg-gray-400 cursor-not-allowed text-white font-bold py-3 px-6 rounded-lg transition duration-200 uppercase text-xs tracking-wider shadow-md flex items-center justify-center";
+            }
+
+            // 🌟 RESET: Retorna o botão de salvar para o estado inicial laranja e clicável
+            if (btnSalvarChecklist) {
+                btnSalvarChecklist.disabled = false;
+                btnSalvarChecklist.className = "bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-8 rounded-lg transition duration-200 uppercase text-xs tracking-wider shadow-md flex items-center justify-center";
+                btnSalvarChecklist.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> 1. Salvar Checklist';
             }
             
             const modalRaioX = document.getElementById('raiox-modal');
@@ -1292,6 +1299,11 @@ todosOsSelects.forEach(select => {
                     if (response.ok || response.status === 201) {
                         isChecklistSaved = true;
 
+                        // 🌟 SUCESSO: Desabilita o botão, muda para verde e exibe "Checklist Salvo"
+                        btnSalvarChecklist.disabled = true;
+                        btnSalvarChecklist.className = "bg-green-600 text-white font-bold py-3 px-8 rounded-lg cursor-not-allowed shadow-md flex items-center justify-center opacity-90";
+                        btnSalvarChecklist.innerHTML = '<i class="fa-solid fa-circle-check mr-2"></i> Checklist Salvo!';
+
                         // Libera visualmente e logicamente o botão do Laudo PDF (Etapa 2)
                         btnSeguirRelatorios.disabled = false;
                         btnSeguirRelatorios.className = "w-full sm:w-auto bg-brand-blue hover:bg-brand-blue-dark text-white font-bold py-3 px-6 rounded-lg transition duration-200 uppercase text-xs tracking-wider shadow-md flex items-center justify-center cursor-pointer";
@@ -1300,11 +1312,12 @@ todosOsSelects.forEach(select => {
                     } else {
                         const errorBody = await response.text();
                         alert('Falha ao persistir checklist: ' + errorBody.substring(0, 100));
+                        btnSalvarChecklist.disabled = false;
+                        btnSalvarChecklist.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> 1. Salvar Checklist';
                     }
                 } catch (error) {
                     console.error("Erro na persistência do checklist:", error);
                     alert('Erro de conexão ao salvar dados. Verifique o seu n8n.');
-                } finally {
                     btnSalvarChecklist.disabled = false;
                     btnSalvarChecklist.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> 1. Salvar Checklist';
                 }
